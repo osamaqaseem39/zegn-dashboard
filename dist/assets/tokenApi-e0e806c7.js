@@ -1,0 +1,2 @@
+import{b as t}from"./main-d9b0538d.js";const o={getTokens:async()=>{const e=await t.get("/tokens");return e.data.tokens??e.data},getTokenPrices:async e=>{const n=e&&e.length>0?`?symbols=${e.join(",")}`:"";return(await t.get(`/tokens/prices${n}`)).data},getTrendingTokens:async()=>(await t.get("/tokens/trending")).data,getTopTokens:async()=>(await t.get("/tokens/top")).data,getTokenMetadata:async e=>(await t.get(`/tokens/metadata/${e}`)).data};export{o as t};
+//# sourceMappingURL=tokenApi-e0e806c7.js.map

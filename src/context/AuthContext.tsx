@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi, UserProfile, LoginRequest, RegisterRequest } from '../api/authApi';
+import axiosInstance from '../api/axiosConfig';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -36,7 +37,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (token) {
         try {
           // Set the token in axios headers
-          const axiosInstance = (await import('../api/axiosConfig')).default;
           axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           
           // Get user profile
@@ -67,7 +67,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(response.user);
       
       // Set axios headers
-      const axiosInstance = (await import('../api/axiosConfig')).default;
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -88,7 +87,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(response.user);
       
       // Set axios headers
-      const axiosInstance = (await import('../api/axiosConfig')).default;
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
@@ -102,7 +100,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
     
     // Clear axios headers
-    const axiosInstance = require('../api/axiosConfig').default;
     delete axiosInstance.defaults.headers.common['Authorization'];
   };
 
