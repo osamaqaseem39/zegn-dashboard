@@ -45,5 +45,11 @@ export const categoryApi = {
   remove: async (id: string): Promise<void> => {
     await axiosInstance.delete(`/category/${id}`);
   },
+
+  // Get all categories (alias for list)
+  getCategories: async (): Promise<Category[]> => {
+    const response = await axiosInstance.get('/category');
+    return response.data;
+  },
 };
 

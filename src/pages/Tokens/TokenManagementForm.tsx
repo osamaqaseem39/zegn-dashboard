@@ -75,11 +75,26 @@ const TokenManagementForm: React.FC = () => {
         const metadata = await solscanApiService.getTokenMetadata(tokenAddress);
         
         const tokenData: Token = {
+          _id: '',
           symbol: metadata.symbol,
           name: metadata.metadata?.name || metadata.symbol,
-          address: metadata.address,
+          tokenAddress: metadata.address,
+          description: metadata.description || '',
           decimals: metadata.decimals,
-          logoURI: metadata.metadata?.image || '',
+          icon: metadata.metadata?.image || '',
+          marketCap: '',
+          holder: '',
+          supply: '',
+          price: '',
+          volume: 0,
+          priceChange24h: '',
+          isActive: true,
+          isSpotlight: false,
+          isHome: false,
+          category: '',
+          createdAt: '',
+          updatedAt: '',
+          isLive: true,
         };
         
         setToken(tokenData);

@@ -97,4 +97,10 @@ export const authApi = {
     const response = await axiosInstance.post('/user/create-admin', adminData);
     return response.data;
   },
+
+  // Get all users (admin only)
+  getUsers: async (params?: { limit?: number; offset?: number; search?: string }): Promise<{ users: UserProfile[]; total: number }> => {
+    const response = await axiosInstance.get('/user', { params });
+    return response.data;
+  },
 }; 

@@ -95,7 +95,7 @@ const Dashboard: React.FC = () => {
         fromTokenSymbol: 'USDC',
         fromTokenAddress: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
         toTokenSymbol: selectedToken,
-        toTokenAddress: tokens.find(t => t.symbol === selectedToken)?.address || '',
+        toTokenAddress: tokens.find(t => t.symbol === selectedToken)?.tokenAddress || '',
         amount: parseFloat(amount),
         slippage: parseFloat(slippage)
       });
@@ -114,7 +114,7 @@ const Dashboard: React.FC = () => {
       setTradingLoading(true);
       await transactionApi.buyToken({
         tokenSymbol: selectedToken,
-        tokenAddress: tokens.find(t => t.symbol === selectedToken)?.address || '',
+        tokenAddress: tokens.find(t => t.symbol === selectedToken)?.tokenAddress || '',
         amount: parseFloat(amount),
         slippage: parseFloat(slippage)
       });
@@ -251,7 +251,7 @@ const Dashboard: React.FC = () => {
                       {tokens.map((token) => (
                         <SelectItem key={token.symbol} value={token.symbol}>
                           <div className="flex items-center space-x-2">
-                            <img src={token.logoURI} alt={token.name} className="w-4 h-4 rounded-full" />
+                            <img src={token.icon} alt={token.name} className="w-4 h-4 rounded-full" />
                             <span>{token.symbol}</span>
                           </div>
                         </SelectItem>
@@ -336,7 +336,7 @@ const Dashboard: React.FC = () => {
                   return (
                     <div key={token.symbol} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
-                        <img src={token.logoURI} alt={token.name} className="w-6 h-6 rounded-full" />
+                        <img src={token.icon} alt={token.name} className="w-6 h-6 rounded-full" />
                         <div>
                           <div className="font-medium">{token.symbol}</div>
                           <div className="text-sm text-gray-600">{token.name}</div>
