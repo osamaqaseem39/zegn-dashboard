@@ -46,8 +46,18 @@ export interface LoginResponse {
 export const authApi = {
   // Login user
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
+    console.log('authApi: Making login request to /admin/user/sign-in with:', credentials);
     const response = await axiosInstance.post('/admin/user/sign-in', credentials);
-    return response.data;
+    console.log('authApi: Login response:', response.data);
+    
+    // Handle different response structures
+    if (response.data.status && response.data.status.code !== 200) {
+      throw new Error(response.data.status.message || 'Login failed');
+    }
+    
+    // If response has a data property, use it, otherwise use the response directly
+    const data = response.data.data || response.data;
+    return data;
   },
 
   // Register user

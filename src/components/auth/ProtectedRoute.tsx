@@ -10,8 +10,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
+  console.log('ProtectedRoute: user:', user, 'loading:', loading);
+
   // Show loading spinner while checking authentication
   if (loading) {
+    console.log('ProtectedRoute: Showing loading spinner');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -24,10 +27,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   // Redirect to login if not authenticated
   if (!user) {
+    console.log('ProtectedRoute: No user, redirecting to signin');
     return <Navigate to="/signin" state={{ from: location }} replace />;
   }
 
   // Render protected content if authenticated
+  console.log('ProtectedRoute: User authenticated, rendering protected content');
   return <>{children}</>;
 };
 

@@ -57,18 +57,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (credentials: LoginRequest) => {
     try {
       setError(null);
+      console.log('AuthContext: Starting login process');
       const response = await authApi.login(credentials);
+      console.log('AuthContext: Login response received:', response);
       
       // Store token
       localStorage.setItem('token', response.token);
       setToken(response.token);
+      console.log('AuthContext: Token stored and set');
       
       // Set user
       setUser(response.user);
+      console.log('AuthContext: User set:', response.user);
       
       // Set axios headers
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
+      console.log('AuthContext: Axios headers set');
     } catch (err) {
+      console.error('AuthContext: Login error:', err);
       setError(err instanceof Error ? err.message : 'Login failed');
       throw err;
     }
