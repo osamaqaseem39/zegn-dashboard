@@ -118,15 +118,27 @@ export const authApi = {
     return response.data;
   },
 
-  // Create admin user
-  createAdmin: async (adminData: CreateAdminRequest): Promise<{ message: string; admin: any }> => {
-    const response = await axiosInstance.post('/user/create-admin', adminData);
+  // Create test admin user for development
+  createTestAdmin: async (adminData: CreateAdminRequest): Promise<{ message: string; admin: any }> => {
+    const response = await axiosInstance.post('/admin/user/create-test-admin', adminData);
     return response.data;
   },
 
   // Get all users (admin only)
   getUsers: async (params?: { limit?: number; offset?: number; search?: string }): Promise<{ users: UserProfile[]; total: number }> => {
-    const response = await axiosInstance.get('/user', { params });
+    const response = await axiosInstance.get('/admin/user/list', { params });
+    return response.data;
+  },
+
+  // Get user by ID (admin only)
+  getUserById: async (id: string): Promise<UserProfile> => {
+    const response = await axiosInstance.get(`/admin/user/findOne/${id}`);
+    return response.data;
+  },
+
+  // Get user balance by ID (admin only)
+  getUserBalance: async (id: string): Promise<{ balance: number }> => {
+    const response = await axiosInstance.get(`/admin/user/balance/${id}`);
     return response.data;
   },
 }; 

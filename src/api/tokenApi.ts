@@ -32,6 +32,33 @@ export interface TokenPricesResponse {
   [symbol: string]: TokenPrice;
 }
 
+export interface CreateTokenRequest {
+  name: string;
+  symbol: string;
+  description: string;
+  decimals: number;
+  icon: string;
+  tokenAddress: string;
+  category: string;
+  isActive?: boolean;
+  isSpotlight?: boolean;
+  isHome?: boolean;
+  isLive?: boolean;
+}
+
+export interface UpdateTokenRequest extends Partial<CreateTokenRequest> {}
+
+export interface TokenFilters {
+  category?: string;
+  isActive?: boolean;
+  isSpotlight?: boolean;
+  isHome?: boolean;
+  isLive?: boolean;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
 export const tokenApi = {
   // Get all tokens
   getTokens: async (): Promise<Token[]> => {
@@ -62,6 +89,73 @@ export const tokenApi = {
   // Get token metadata
   getTokenMetadata: async (address: string) => {
     const response = await axiosInstance.get(`/tokens/metadata/${address}`);
+    return response.data;
+  },
+
+  // Admin endpoints
+  // Create a new token
+  createToken: async (tokenData: CreateTokenRequest): Promise<Token> => {
+    const response = await axiosInstance.post('/admin/token/create', tokenData);
+    return response.data;
+  },
+
+  // Update token by ID
+  updateToken: async (id: string, tokenData: UpdateTokenRequest): Promise<Token> => {
+    const response = await axiosInstance.put(`/admin/token/update/${id}`, tokenData);
+    return response.data;
+  },
+
+  // Get all tokens with filters (admin)
+  getAdminTokens: async (filters?: TokenFilters): Promise<{ tokens: Token[]; total: number }> => {
+    const response = await axiosInstance.get('/admin/token', { params: filters });
+    return response.data;
+  },
+
+  // Get token by address (admin)
+  getTokenByAddress: async (address: string): Promise<Token> => {
+    const response = await axiosInstance.get(`/admin/token/${address}`);
+    return response.data;
+  },
+
+  // Toggle token active status by address
+  toggleTokenActive: async (address: string): Promise<Token> => {
+    const response = await axiosInstance.put(`/admin/token/active/${address}`);
+    return response.data;
+  },
+
+  // Toggle token spotlight status by address
+  toggleTokenSpotlight: async (address: string): Promise<Token> => {
+    const response = await axiosInstance.put(`/admin/token/spotlight/${address}`);
+    return response.data;
+  },
+
+  // Toggle token live status by address
+  toggleTokenLive: async (address: string): Promise<Token> => {
+    const response = await axiosInstance.put(`/admin/token/live/${address}`);
+    return response.data;
+  },
+
+  // Toggle token home status by address
+  toggleTokenHome: async (address: string): Promise<Token> => {
+    const response = await axiosInstance.put(`/admin/token/home/${address}`);
+    return response.data;
+  },
+
+  // Activate token graph cron data by ID
+  activateTokenGraphCron: async (id: string): Promise<{ message: string }> => {
+    const response = await axiosInstance.put(`/admin/token/graph/cron/active/${id}`);
+    return response.data;
+  },
+
+  // Fetch latest graph data for token by ID
+  fetchLatestGraphData: async (id: string): Promise<{ message: string }> => {
+    const response = await axiosInstance.put(`/admin/token/graph/allow/latest/${id}`);
+    return response.data;
+  },
+
+  // Delete token graph data by ID
+  deleteTokenGraphData: async (id: string): Promise<{ message: string }> => {
+    const response = await axiosInstance.delete(`/admin/token/graph/${id}`);
     return response.data;
   },
 }; 
