@@ -45,7 +45,7 @@ const SignIn: React.FC = () => {
         role: 'admin'
       };
       
-      const response = await authApi.createAdmin(adminData);
+      const response = await authApi.createTestAdmin(adminData);
       console.log('Admin created:', response);
       setError('Admin user created successfully! You can now log in.');
     } catch (err: any) {

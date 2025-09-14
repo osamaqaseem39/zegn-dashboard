@@ -43,7 +43,7 @@ const CreateAdmin: React.FC = () => {
       setError(null);
       setSuccess(null);
 
-      const response = await authApi.createAdmin(formData);
+      const response = await authApi.createTestAdmin(formData);
       setSuccess(`Admin created successfully! Email: ${response.admin.email}`);
       
       // Reset form
