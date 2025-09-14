@@ -55,6 +55,12 @@ export const authApi = {
       throw new Error(response.data.status.message || 'Login failed');
     }
     
+    // If response has a body property (successful response), use it
+    if (response.data.body) {
+      console.log('authApi: Using response.body:', response.data.body);
+      return response.data.body;
+    }
+    
     // If response has a data property, use it, otherwise use the response directly
     const data = response.data.data || response.data;
     return data;
