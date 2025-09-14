@@ -46,7 +46,7 @@ export interface LoginResponse {
 export const authApi = {
   // Login user
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    const response = await axiosInstance.post('/auth/login', credentials);
+    const response = await axiosInstance.post('/admin/user/sign-in', credentials);
     return response.data;
   },
 
