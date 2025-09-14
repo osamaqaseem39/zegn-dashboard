@@ -46,24 +46,29 @@ export interface LoginResponse {
 export const authApi = {
   // Login user
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    console.log('authApi: Making login request to /auth/login with:', credentials);
-    const response = await axiosInstance.post('/auth/login', credentials);
-    console.log('authApi: Login response:', response.data);
-    
-    // Handle different response structures
-    if (response.data.status && response.data.status.code !== 200) {
-      throw new Error(response.data.status.message || 'Login failed');
+    console.log('authApi: Making login request to /admin/user/sign-in with:', credentials);
+    try {
+      const response = await axiosInstance.post('/admin/user/sign-in', credentials);
+      console.log('authApi: Login response:', response.data);
+      
+      // Handle different response structures
+      if (response.data.status && response.data.status.code !== 200) {
+        throw new Error(response.data.status.message || 'Login failed');
+      }
+      
+      // If response has a body property (successful response), use it
+      if (response.data.body) {
+        console.log('authApi: Using response.body:', response.data.body);
+        return response.data.body;
+      }
+      
+      // If response has a data property, use it, otherwise use the response directly
+      const data = response.data.data || response.data;
+      return data;
+    } catch (error: any) {
+      console.error('authApi: Login error details:', error.response?.data);
+      throw error;
     }
-    
-    // If response has a body property (successful response), use it
-    if (response.data.body) {
-      console.log('authApi: Using response.body:', response.data.body);
-      return response.data.body;
-    }
-    
-    // If response has a data property, use it, otherwise use the response directly
-    const data = response.data.data || response.data;
-    return data;
   },
 
   // Register user
