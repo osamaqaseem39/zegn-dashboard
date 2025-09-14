@@ -46,8 +46,8 @@ export interface LoginResponse {
 export const authApi = {
   // Login user
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    console.log('authApi: Making login request to /admin/user/sign-in with:', credentials);
-    const response = await axiosInstance.post('/admin/user/sign-in', credentials);
+    console.log('authApi: Making login request to /auth/login with:', credentials);
+    const response = await axiosInstance.post('/auth/login', credentials);
     console.log('authApi: Login response:', response.data);
     
     // Handle different response structures
