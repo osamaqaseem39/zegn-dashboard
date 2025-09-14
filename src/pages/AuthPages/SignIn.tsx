@@ -22,13 +22,10 @@ const SignIn: React.FC = () => {
     setError('');
 
     try {
-      console.log('Attempting login with:', { email, password });
       await login({ email, password });
-      console.log('Login successful, navigating to dashboard');
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Login failed:', err);
-      console.error('Error response:', err.response?.data);
       setError(err.response?.data?.message || err.message || 'Login failed');
     } finally {
       setLoading(false);

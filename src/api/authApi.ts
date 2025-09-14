@@ -52,14 +52,19 @@ export const authApi = {
       console.log('authApi: Login response:', response.data);
       
       // Handle different response structures
-      if (response.data.status && response.data.status.code !== 200) {
+      if (response.data.status && response.data.status.code !== 200 && response.data.status.code !== 201) {
         throw new Error(response.data.status.message || 'Login failed');
       }
       
       // If response has a body property (successful response), use it
       if (response.data.body) {
         console.log('authApi: Using response.body:', response.data.body);
-        return response.data.body;
+        // Extract token and user from the body
+        return {
+          token: response.data.body.token,
+          user: response.data.body.user,
+          message: response.data.status.message || 'Login successful'
+        };
       }
       
       // If response has a data property, use it, otherwise use the response directly
