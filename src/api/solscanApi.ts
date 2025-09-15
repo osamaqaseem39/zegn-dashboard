@@ -61,35 +61,57 @@ const fetchFromSolanaFm = async (address: string): Promise<SolscanTokenMetadata>
     const data = response.data;
     
     return {
-      address: data.address || address,
-      symbol: data.symbol || 'UNKNOWN',
-      name: data.name || 'Unknown Token',
+      address: data.mint || address,
+      symbol: data.tokenList?.symbol || 'UNKNOWN',
+      name: data.tokenList?.name || 'Unknown Token',
       decimals: data.decimals || 9,
-      holder: data.holderCount || 0,
-      creator: data.creator || '',
-      create_tx: data.mintTx || '',
-      created_time: data.createdAt ? new Date(data.createdAt).getTime() / 1000 : 0,
-      icon: data.image || '',
+      holder: 0, // Not available in this response
+      creator: '', // Not available in this response
+      create_tx: '', // Not available in this response
+      created_time: 0, // Not available in this response
+      icon: data.tokenList?.image || '',
       metadata: {
-        name: data.name || 'Unknown Token',
-        symbol: data.symbol || 'UNKNOWN',
-        description: data.description || 'Token metadata from Solana.fm',
-        image: data.image || ''
+        name: data.tokenList?.name || 'Unknown Token',
+        symbol: data.tokenList?.symbol || 'UNKNOWN',
+        description: 'Token metadata from Solana.fm',
+        image: data.tokenList?.image || ''
       },
       mint_authority: data.mintAuthority || null,
       freeze_authority: data.freezeAuthority || null,
-      supply: data.supply || '0',
-      price: data.price || 0,
-      volume_24h: data.volume24h || 0,
-      market_cap: data.marketCap || 0,
-      market_cap_rank: data.marketCapRank || 0,
-      price_change_24h: data.priceChange24h || 0,
-      website: data.website || '',
-      twitter: data.twitter || '',
-      description: data.description || 'Token metadata from Solana.fm'
+      supply: '0', // Not available in this response
+      price: 0, // Not available in this response
+      volume_24h: 0, // Not available in this response
+      market_cap: 0, // Not available in this response
+      market_cap_rank: 0, // Not available in this response
+      price_change_24h: 0, // Not available in this response
+      website: '', // Not available in this response
+      twitter: '', // Not available in this response
+      description: 'Token metadata from Solana.fm'
     };
   } catch (error) {
     console.error('Error fetching from Solana.fm:', error);
+    throw error;
+  }
+};
+
+// Helper function to get basic token info from Solana.fm (more reliable for basic data)
+const getBasicTokenInfoFromSolanaFm = async (address: string) => {
+  try {
+    const response = await solanaFmApi.get(`/tokens/${address}`);
+    const data = response.data;
+    
+    return {
+      address: data.mint || address,
+      symbol: data.tokenList?.symbol || 'UNKNOWN',
+      name: data.tokenList?.name || 'Unknown Token',
+      decimals: data.decimals || 9,
+      image: data.tokenList?.image || '',
+      mintAuthority: data.mintAuthority || null,
+      freezeAuthority: data.freezeAuthority || null,
+      tokenType: data.tokenType || 'Legacy'
+    };
+  } catch (error) {
+    console.error('Error fetching basic token info from Solana.fm:', error);
     throw error;
   }
 };
@@ -229,6 +251,25 @@ export const solscanApiService = {
         console.warn('Solana.fm top tokens also failed, returning empty list');
         return [];
       }
+    }
+  },
+
+  // Get basic token info from Solana.fm (reliable fallback)
+  getBasicTokenInfo: async (address: string) => {
+    try {
+      return await getBasicTokenInfoFromSolanaFm(address);
+    } catch (error) {
+      console.error('Error fetching basic token info:', error);
+      return {
+        address,
+        symbol: 'UNKNOWN',
+        name: 'Unknown Token',
+        decimals: 9,
+        image: '',
+        mintAuthority: null,
+        freezeAuthority: null,
+        tokenType: 'Legacy'
+      };
     }
   },
 
