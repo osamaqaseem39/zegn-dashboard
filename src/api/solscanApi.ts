@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { solanaFmApiService } from './solanaFmApi';
 
 const SOLSCAN_API_KEY = import.meta.env.REACT_APP_SOLSCAN_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVhdGVkQXQiOjE3NTc1MDMxMDYxNTYsImVtYWlsIjoib3NhbWEucWEuMzlAZ21haWwuY29tIiwiYWN0aW9uIjoidG9rZW4tYXBpIiwiYXBpVmVyc2lvbiI6InYyIiwiaWF0IjoxNzU3NTAzMTA2fQ.wg5VlPwjbx2DpoNfJAdoV943LPR6qAiNhLRPDaL2djU';
 
@@ -7,14 +8,6 @@ const solscanApi = axios.create({
   headers: {
     'Accept': 'application/json',
     'token': SOLSCAN_API_KEY
-  }
-});
-
-// Solana.fm API as fallback
-const solanaFmApi = axios.create({
-  baseURL: 'https://api.solana.fm/v1',
-  headers: {
-    'Accept': 'application/json'
   }
 });
 
@@ -54,89 +47,12 @@ export interface SolscanTokenPrice {
   marketCap: number;
 }
 
-// Helper function to fetch token data from Solana.fm
+// Helper function to fetch token data from Solana.fm using the separate API
 const fetchFromSolanaFm = async (address: string): Promise<SolscanTokenMetadata> => {
   try {
-    const [tokenResponse, supplyResponse] = await Promise.allSettled([
-      solanaFmApi.get(`/tokens/${address}`),
-      solanaFmApi.get(`/tokens/${address}/supply`)
-    ]);
-    
-    const tokenData = tokenResponse.status === 'fulfilled' ? tokenResponse.value.data : {};
-    const supplyData = supplyResponse.status === 'fulfilled' ? supplyResponse.value.data : {};
-    
-    return {
-      address: tokenData.mint || address,
-      symbol: tokenData.tokenList?.symbol || 'UNKNOWN',
-      name: tokenData.tokenList?.name || 'Unknown Token',
-      decimals: tokenData.decimals || supplyData.decimals || 9,
-      holder: 0, // Not available in this response
-      creator: '', // Not available in this response
-      create_tx: '', // Not available in this response
-      created_time: 0, // Not available in this response
-      icon: tokenData.tokenList?.image || '',
-      metadata: {
-        name: tokenData.tokenList?.name || 'Unknown Token',
-        symbol: tokenData.tokenList?.symbol || 'UNKNOWN',
-        description: 'Token metadata from Solana.fm',
-        image: tokenData.tokenList?.image || ''
-      },
-      mint_authority: tokenData.mintAuthority || null,
-      freeze_authority: tokenData.freezeAuthority || null,
-      supply: supplyData.circulatingSupply?.toString() || '0',
-      price: 0, // Not available in this response
-      volume_24h: 0, // Not available in this response
-      market_cap: 0, // Not available in this response
-      market_cap_rank: 0, // Not available in this response
-      price_change_24h: 0, // Not available in this response
-      website: '', // Not available in this response
-      twitter: '', // Not available in this response
-      description: 'Token metadata from Solana.fm'
-    };
+    return await solanaFmApiService.getTokenMetadataForSolscan(address);
   } catch (error) {
     console.error('Error fetching from Solana.fm:', error);
-    throw error;
-  }
-};
-
-// Helper function to get basic token info from Solana.fm (more reliable for basic data)
-const getBasicTokenInfoFromSolanaFm = async (address: string) => {
-  try {
-    const response = await solanaFmApi.get(`/tokens/${address}`);
-    const data = response.data;
-    
-    return {
-      address: data.mint || address,
-      symbol: data.tokenList?.symbol || 'UNKNOWN',
-      name: data.tokenList?.name || 'Unknown Token',
-      decimals: data.decimals || 9,
-      image: data.tokenList?.image || '',
-      mintAuthority: data.mintAuthority || null,
-      freezeAuthority: data.freezeAuthority || null,
-      tokenType: data.tokenType || 'Legacy'
-    };
-  } catch (error) {
-    console.error('Error fetching basic token info from Solana.fm:', error);
-    throw error;
-  }
-};
-
-// Helper function to get token supply data from Solana.fm
-const getTokenSupplyFromSolanaFm = async (address: string) => {
-  try {
-    const response = await solanaFmApi.get(`/tokens/${address}/supply`);
-    const data = response.data;
-    
-    return {
-      circulatingSupply: data.circulatingSupply || 0,
-      tokenWithheldAmount: data.tokenWithheldAmount || 0,
-      userTotalWithheldAmount: data.userTotalWithheldAmount || 0,
-      totalWithheldAmount: data.totalWithheldAmount || 0,
-      realCirculatingSupply: data.realCirculatingSupply || 0,
-      decimals: data.decimals || 9
-    };
-  } catch (error) {
-    console.error('Error fetching token supply from Solana.fm:', error);
     throw error;
   }
 };
@@ -250,8 +166,7 @@ export const solscanApiService = {
       // Try Solana.fm as fallback
       console.warn('Solscan trending failed, trying Solana.fm...');
       try {
-        const response = await solanaFmApi.get(`/tokens/trending?limit=${limit}`);
-        return response.data.data || [];
+        return await solanaFmApiService.getTrendingTokens(limit);
       } catch (fmError) {
         console.warn('Solana.fm trending also failed, returning empty list');
         return [];
@@ -270,8 +185,7 @@ export const solscanApiService = {
       // Try Solana.fm as fallback
       console.warn('Solscan top tokens failed, trying Solana.fm...');
       try {
-        const response = await solanaFmApi.get(`/tokens/top?limit=${limit}`);
-        return response.data.data || [];
+        return await solanaFmApiService.getTopTokens(limit);
       } catch (fmError) {
         console.warn('Solana.fm top tokens also failed, returning empty list');
         return [];
@@ -282,7 +196,7 @@ export const solscanApiService = {
   // Get basic token info from Solana.fm (reliable fallback)
   getBasicTokenInfo: async (address: string) => {
     try {
-      return await getBasicTokenInfoFromSolanaFm(address);
+      return await solanaFmApiService.getBasicTokenInfo(address);
     } catch (error) {
       console.error('Error fetching basic token info:', error);
       return {
@@ -301,7 +215,7 @@ export const solscanApiService = {
   // Get token supply data from Solana.fm
   getTokenSupply: async (address: string) => {
     try {
-      return await getTokenSupplyFromSolanaFm(address);
+      return await solanaFmApiService.getTokenSupply(address);
     } catch (error) {
       console.error('Error fetching token supply:', error);
       return {
@@ -318,15 +232,7 @@ export const solscanApiService = {
   // Get comprehensive token data (basic info + supply) from Solana.fm
   getComprehensiveTokenData: async (address: string) => {
     try {
-      const [basicInfo, supplyData] = await Promise.all([
-        getBasicTokenInfoFromSolanaFm(address),
-        getTokenSupplyFromSolanaFm(address)
-      ]);
-      
-      return {
-        ...basicInfo,
-        supply: supplyData
-      };
+      return await solanaFmApiService.getComprehensiveTokenData(address);
     } catch (error) {
       console.error('Error fetching comprehensive token data:', error);
       return {
