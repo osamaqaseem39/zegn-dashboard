@@ -28,7 +28,7 @@ export default function CategoryForm() {
 
   const fetchCategoryDetails = useCallback(async () => {
     try {
-      const categoryData = await categoryApi.getById(categoryId as string);
+      const categoryData = await categoryApi.getAdminCategoryById(categoryId as string);
       setFormData({
         name: categoryData.name,
         description: categoryData.description,

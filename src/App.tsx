@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import { AuthProvider } from "./context/AuthContext";
 import AppLayout from "./layout/AppLayout";
 import AuthLayout from "./layout/AuthLayout";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import NotFound from './pages/NotFound';
 
 // Lazy load components for better code splitting
@@ -38,7 +39,7 @@ export default function App() {
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
             {/* Protected Routes */}
-            <Route element={<AppLayout />}>
+            <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route index path="/" element={<Dashboard />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/ecommerce" element={<Ecommerce />} />

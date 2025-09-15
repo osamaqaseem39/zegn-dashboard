@@ -34,7 +34,7 @@ export default function CategoryList() {
     const fetchCategories = async () => {
       try {
         setLoading(true);
-        const data = await categoryApi.list();
+        const data = await categoryApi.getAdminCategories();
         setCategories(data);
       } catch (err: any) {
         setError(err.response?.data?.message || "Failed to load categories");

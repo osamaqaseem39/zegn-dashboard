@@ -76,7 +76,7 @@ const AdminDashboard: React.FC = () => {
         authApi.getUsers({ limit: 1000 }),
         tokenApi.getTokens(),
         transactionApi.getTransactionHistory({ limit: 1000 }),
-        categoryApi.getCategories()
+        categoryApi.getAdminCategories()
       ]);
 
       // Calculate stats
