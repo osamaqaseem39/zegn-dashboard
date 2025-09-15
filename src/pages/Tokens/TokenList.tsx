@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import axiosInstance from "../../api/axiosConfig";
+import { tokenApi } from "../../api/tokenApi";
 import Input from "../../components/form/input/InputField";
 import { PageMeta } from '../../components/common/PageMeta';
 
@@ -72,8 +72,22 @@ export default function TokenList() {
     currentState: false
   });
 
-  // Remove useEffect(() => { fetchTokens(); }, []);
-  // Remove fetchTokens function
+  useEffect(() => {
+    fetchTokens();
+  }, []);
+
+  const fetchTokens = async () => {
+    try {
+      setLoading(true);
+      const data = await tokenApi.getTokens();
+      setTokens(data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to load tokens");
+      console.error("Error fetching tokens:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDeleteConfirm = async () => {
     try {
@@ -224,29 +238,34 @@ export default function TokenList() {
     const { tokenAddress, property } = toggleConfirm;
     setToggleLoading(prev => ({ ...prev, [`${tokenAddress}-${property}`]: true }));
     try {
-      // This function is no longer used with dummy data, but kept for consistency
-      // If axiosInstance were still available, it would be used here.
-      // For now, it's a placeholder.
-      console.log(`Attempting to toggle ${property} for token with address: ${tokenAddress}`);
-      // Example: await axiosInstance.put(`/admin/token/${property}/${tokenAddress}`);
-      // For dummy data, we just update the state
+      let updatedToken;
+      
+      switch (property) {
+        case 'active':
+          updatedToken = await tokenApi.toggleActive(tokenAddress);
+          break;
+        case 'spotlight':
+          updatedToken = await tokenApi.toggleSpotlight(tokenAddress);
+          break;
+        case 'live':
+          updatedToken = await tokenApi.toggleLive(tokenAddress);
+          break;
+        case 'home':
+          updatedToken = await tokenApi.toggleHome(tokenAddress);
+          break;
+        default:
+          throw new Error(`Unknown property: ${property}`);
+      }
+      
+      // Update the token in the state
       setTokens(prevTokens => 
         prevTokens.map(token => 
-          token.tokenAddress === tokenAddress
-            ? {
-                ...token,
-                [property === 'active' ? 'isActive' : 
-                 property === 'spotlight' ? 'isSpotlight' :
-                 property === 'live' ? 'isLive' : 'isHome']: 
-                !token[property === 'active' ? 'isActive' : 
-                       property === 'spotlight' ? 'isSpotlight' :
-                       property === 'live' ? 'isLive' : 'isHome']
-              }
-            : token
+          token.tokenAddress === tokenAddress ? updatedToken : token
         )
       );
     } catch (err: any) {
       setError(err.response?.data?.message || `Failed to toggle ${property}`);
+      console.error(`Error toggling ${property}:`, err);
     } finally {
       setToggleLoading(prev => ({ ...prev, [`${tokenAddress}-${property}`]: false }));
       setToggleConfirm({
