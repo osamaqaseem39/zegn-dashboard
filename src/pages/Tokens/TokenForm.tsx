@@ -81,6 +81,10 @@ export default function TokenForm() {
   const [metadataLoading, setMetadataLoading] = useState(false);
   const [metadataError, setMetadataError] = useState("");
 
+  const [enhancedMetadata, setEnhancedMetadata] = useState<any>(null);
+  const [validationLoading, setValidationLoading] = useState(false);
+  const [validationError, setValidationError] = useState("");
+
   const [showSolscanSection, setShowSolscanSection] = useState(false);
 
   const fetchTokenDetails = useCallback(async (address: string) => {
@@ -186,6 +190,33 @@ export default function TokenForm() {
       console.error("Error fetching categories:", err);
     }
   };
+
+  const validateTokenAddress = useCallback(async (address: string) => {
+    if (!address) return;
+    
+    try {
+      setValidationLoading(true);
+      setValidationError("");
+      const metadata = await tokenApi.getEnhancedTokenMetadata(address);
+      setEnhancedMetadata(metadata);
+      
+      // Auto-fill form data if available
+      if (metadata) {
+        setFormData(prev => ({
+          ...prev,
+          name: metadata.name || prev.name,
+          symbol: metadata.symbol || prev.symbol,
+          decimals: metadata.decimals || prev.decimals,
+          icon: metadata.image || prev.icon,
+        }));
+      }
+    } catch (err: any) {
+      setValidationError(err.response?.data?.message || "Failed to validate token address");
+      console.error("Error validating token address:", err);
+    } finally {
+      setValidationLoading(false);
+    }
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

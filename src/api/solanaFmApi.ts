@@ -24,6 +24,23 @@ export interface SolanaFmTokenInfo {
   };
 }
 
+export interface SolanaFmDetailedTokenInfo {
+  id: string;
+  info: {
+    decimals: number;
+    extensions: Array<{
+      extension: string;
+      state: any;
+    }>;
+    freezeAuthority: string | null;
+    isInitialized: boolean;
+    mintAuthority: string | null;
+    supply: string;
+  };
+  slot: number;
+  type: string | null;
+}
+
 export interface SolanaFmTokenSupply {
   circulatingSupply: number | null;
   tokenWithheldAmount: number | null;
@@ -67,6 +84,41 @@ export const getBasicTokenInfo = async (address: string) => {
   }
 };
 
+// Helper function to get detailed token info from Solana.fm
+export const getDetailedTokenInfo = async (address: string) => {
+  try {
+    const response = await solanaFmApi.get(`/tokens/${address}/info`);
+    const data: SolanaFmDetailedTokenInfo = response.data;
+    
+    // Extract transfer fee config from extensions
+    const transferFeeExtension = data.info.extensions?.find(
+      ext => ext.extension === 'transferFeeConfig'
+    );
+    
+    return {
+      id: data.id,
+      decimals: data.info.decimals,
+      supply: data.info.supply,
+      isInitialized: data.info.isInitialized,
+      mintAuthority: data.info.mintAuthority,
+      freezeAuthority: data.info.freezeAuthority,
+      slot: data.slot,
+      type: data.type,
+      transferFeeConfig: transferFeeExtension ? {
+        newerTransferFee: transferFeeExtension.state.newerTransferFee,
+        olderTransferFee: transferFeeExtension.state.olderTransferFee,
+        transferFeeConfigAuthority: transferFeeExtension.state.transferFeeConfigAuthority,
+        withdrawWithheldAuthority: transferFeeExtension.state.withdrawWithheldAuthority,
+        withheldAmount: transferFeeExtension.state.withheldAmount
+      } : null,
+      extensions: data.info.extensions || []
+    };
+  } catch (error) {
+    console.error('Error fetching detailed token info from Solana.fm:', error);
+    throw error;
+  }
+};
+
 // Helper function to get token supply data from Solana.fm
 export const getTokenSupply = async (address: string) => {
   try {
@@ -101,6 +153,33 @@ export const getComprehensiveTokenData = async (address: string): Promise<Solana
     };
   } catch (error) {
     console.error('Error fetching comprehensive token data:', error);
+    throw error;
+  }
+};
+
+// Get complete token data including detailed metadata
+export const getCompleteTokenData = async (address: string) => {
+  try {
+    const [basicInfo, supplyData, detailedInfo] = await Promise.all([
+      getBasicTokenInfo(address),
+      getTokenSupply(address),
+      getDetailedTokenInfo(address)
+    ]);
+    
+    return {
+      ...basicInfo,
+      supply: supplyData,
+      metadata: {
+        mintAuthority: detailedInfo.mintAuthority,
+        freezeAuthority: detailedInfo.freezeAuthority,
+        isInitialized: detailedInfo.isInitialized,
+        tokenType: basicInfo.tokenType,
+        transferFeeConfig: detailedInfo.transferFeeConfig,
+        extensions: detailedInfo.extensions
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching complete token data:', error);
     throw error;
   }
 };
@@ -177,8 +256,10 @@ export const getTopTokens = async (limit: number = 20) => {
 // Main Solana.fm API service
 export const solanaFmApiService = {
   getBasicTokenInfo,
+  getDetailedTokenInfo,
   getTokenSupply,
   getComprehensiveTokenData,
+  getCompleteTokenData,
   getTokenMetadataForSolscan,
   getTrendingTokens,
   getTopTokens

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import axiosInstance from "../../api/axiosConfig";
 import { tokenApi } from "../../api/tokenApi";
+import TokenMetadataCard from "../../components/tokens/TokenMetadataCard";
 
 interface TokenDetail {
   _id: string;
@@ -74,6 +75,7 @@ export default function TokenDetail() {
   const { tokenAddress } = useParams();
   const [token, setToken] = useState<TokenDetail | null>(null);
   const [tokenMetadata, setTokenMetadata] = useState<TokenMetadata | null>(null);
+  const [enhancedMetadata, setEnhancedMetadata] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -99,6 +101,15 @@ export default function TokenDetail() {
     }
   }, []);
 
+  const fetchEnhancedMetadata = useCallback(async (address: string) => {
+    try {
+      const metadata = await tokenApi.getEnhancedTokenMetadata(address);
+      setEnhancedMetadata(metadata);
+    } catch (err: any) {
+      console.error("Error fetching enhanced metadata:", err);
+    }
+  }, []);
+
   const formatNumber = (value: string | number) => {
     const num = typeof value === 'string' ? parseFloat(value) : value;
     if (isNaN(num)) return '0';
@@ -116,8 +127,9 @@ export default function TokenDetail() {
     if (tokenAddress) {
       fetchTokenDetails();
       fetchSolscanMetadata(tokenAddress);
+      fetchEnhancedMetadata(tokenAddress);
     }
-  }, [tokenAddress, fetchTokenDetails, fetchSolscanMetadata]);
+  }, [tokenAddress, fetchTokenDetails, fetchSolscanMetadata, fetchEnhancedMetadata]);
 
   if (loading) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
@@ -368,6 +380,16 @@ export default function TokenDetail() {
             </div>
           </div>
         </div>
+
+        {/* Enhanced Metadata Card */}
+        {enhancedMetadata && (
+          <div className="mt-8">
+            <TokenMetadataCard 
+              metadata={enhancedMetadata.metadata} 
+              tokenAddress={tokenAddress || ''} 
+            />
+          </div>
+        )}
       </div>
     </div>
   );

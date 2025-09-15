@@ -21,6 +21,32 @@ export interface Token {
   createdAt: string;
   updatedAt: string;
   isLive: boolean;
+  // Enhanced metadata from Solana FM
+  metadata?: {
+    mintAuthority: string | null;
+    freezeAuthority: string | null;
+    isInitialized: boolean;
+    tokenType: string;
+    transferFeeConfig?: {
+      newerTransferFee: {
+        epoch: number;
+        maximumFee: string;
+        transferFeeBasisPoints: number;
+      };
+      olderTransferFee: {
+        epoch: number;
+        maximumFee: string;
+        transferFeeBasisPoints: number;
+      };
+      transferFeeConfigAuthority: string | null;
+      withdrawWithheldAuthority: string | null;
+      withheldAmount: string;
+    };
+    extensions?: Array<{
+      extension: string;
+      state: any;
+    }>;
+  };
 }
 
 export interface TokenPrice {
@@ -90,6 +116,12 @@ export const tokenApi = {
   getTokenMetadata: async (address: string) => {
     const response = await axiosInstance.get(`/tokens/metadata/${address}`);
     return response.data;
+  },
+
+  // Get enhanced token metadata from Solana FM
+  getEnhancedTokenMetadata: async (address: string) => {
+    const { getCompleteTokenData } = await import('./solanaFmApi');
+    return await getCompleteTokenData(address);
   },
 
   // Admin endpoints
