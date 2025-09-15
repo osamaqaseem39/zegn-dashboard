@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const SOLSCAN_API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVhdGVkQXQiOjE3NTc1MDMxMDYxNTYsImVtYWlsIjoib3NhbWEucWEuMzlAZ21haWwuY29tIiwiYWN0aW9uIjoidG9rZW4tYXBpIiwiYXBpVmVyc2lvbiI6InYyIiwiaWF0IjoxNzU3NTAzMTA2fQ.wg5VlPwjbx2DpoNfJAdoV943LPR6qAiNhLRPDaL2djU';
+const SOLSCAN_API_KEY = import.meta.env.REACT_APP_SOLSCAN_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVhdGVkQXQiOjE3NTc1MDMxMDYxNTYsImVtYWlsIjoib3NhbWEucWEuMzlAZ21haWwuY29tIiwiYWN0aW9uIjoidG9rZW4tYXBpIiwiYXBpVmVyc2lvbiI6InYyIiwiaWF0IjoxNzU3NTAzMTA2fQ.wg5VlPwjbx2DpoNfJAdoV943LPR6qAiNhLRPDaL2djU';
 
 const solscanApi = axios.create({
   baseURL: 'https://pro-api.solscan.io/v2.0',
@@ -52,8 +52,43 @@ export const solscanApiService = {
     try {
       const response = await solscanApi.get(`/token/meta?address=${address}`);
       return response.data.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching token metadata from Solscan:', error);
+      
+      // Handle API key level error gracefully
+      if (error.response?.data?.error_message?.includes('upgrade your api key level')) {
+        console.warn('Solscan API key level insufficient. Using fallback data.');
+        // Return minimal fallback data
+        return {
+          address,
+          symbol: 'UNKNOWN',
+          name: 'Unknown Token',
+          decimals: 9,
+          holder: 0,
+          creator: '',
+          create_tx: '',
+          created_time: 0,
+          icon: '',
+          metadata: {
+            name: 'Unknown Token',
+            symbol: 'UNKNOWN',
+            description: 'Token metadata unavailable due to API limitations',
+            image: ''
+          },
+          mint_authority: null,
+          freeze_authority: null,
+          supply: '0',
+          price: 0,
+          volume_24h: 0,
+          market_cap: 0,
+          market_cap_rank: 0,
+          price_change_24h: 0,
+          website: '',
+          twitter: '',
+          description: 'Token metadata unavailable due to API limitations'
+        };
+      }
+      
       throw new Error('Failed to fetch token metadata from Solscan');
     }
   },
@@ -73,8 +108,20 @@ export const solscanApiService = {
         volume24h: data.volume_24h || 0,
         marketCap: data.market_cap || 0
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching token price from Solscan:', error);
+      
+      // Handle API key level error gracefully
+      if (error.response?.data?.error_message?.includes('upgrade your api key level')) {
+        console.warn('Solscan API key level insufficient. Using fallback price data.');
+        return {
+          price: 0,
+          priceChange24h: 0,
+          volume24h: 0,
+          marketCap: 0
+        };
+      }
+      
       throw new Error('Failed to fetch token price from Solscan');
     }
   },
@@ -84,8 +131,15 @@ export const solscanApiService = {
     try {
       const response = await solscanApi.get(`/token/trending?limit=${limit}`);
       return response.data.data || [];
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching trending tokens from Solscan:', error);
+      
+      // Handle API key level error gracefully
+      if (error.response?.data?.error_message?.includes('upgrade your api key level')) {
+        console.warn('Solscan API key level insufficient. Returning empty trending tokens list.');
+        return [];
+      }
+      
       throw new Error('Failed to fetch trending tokens from Solscan');
     }
   },
@@ -95,8 +149,15 @@ export const solscanApiService = {
     try {
       const response = await solscanApi.get(`/token/top?limit=${limit}`);
       return response.data.data || [];
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching top tokens from Solscan:', error);
+      
+      // Handle API key level error gracefully
+      if (error.response?.data?.error_message?.includes('upgrade your api key level')) {
+        console.warn('Solscan API key level insufficient. Returning empty top tokens list.');
+        return [];
+      }
+      
       throw new Error('Failed to fetch top tokens from Solscan');
     }
   },
