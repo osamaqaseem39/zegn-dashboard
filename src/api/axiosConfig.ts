@@ -15,7 +15,7 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config) => {
     // Add authentication token if available
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -33,30 +33,16 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    // Only handle 401 if we have a token (we're supposed to be authenticated)
-    const token = localStorage.getItem('token');
+    // Only handle 401 if we have a token and this is not already a retry
+    const token = sessionStorage.getItem('token');
     if (error.response?.status === 401 && token && !originalRequest._retry) {
       originalRequest._retry = true;
       
-      // Try to refresh the token
-      try {
-        // Set the token in axios headers
-        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        
-        // Make a request to validate the token
-        const response = await axiosInstance.get('/auth/profile');
-        
-        if (response.data) {
-          // Token is still valid, retry the original request
-          return axiosInstance(originalRequest);
-        }
-      } catch (refreshError) {
-        // Token is invalid, redirect to login
-        console.error('Token refresh failed:', refreshError);
-        localStorage.removeItem('token');
-        delete axiosInstance.defaults.headers.common['Authorization'];
-        window.location.href = '/signin';
-      }
+      // Don't redirect automatically - let the auth context handle it
+      console.log('Axios: 401 error received, letting auth context handle it');
+      
+      // Just reject the error, don't redirect
+      return Promise.reject(error);
     }
     
     return Promise.reject(error);

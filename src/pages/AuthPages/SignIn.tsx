@@ -23,6 +23,7 @@ const SignIn: React.FC = () => {
 
     try {
       await login({ email, password });
+      // Navigate to dashboard after successful login
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Login failed:', err);

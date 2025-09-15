@@ -35,9 +35,38 @@ export default function CategoryList() {
       try {
         setLoading(true);
         const data = await categoryApi.getAdminCategories();
-        setCategories(data);
+        console.log("API response data:", data);
+        console.log("Data type:", typeof data);
+        console.log("Is array:", Array.isArray(data));
+        
+        // Handle different possible response structures
+        let categoriesData: Category[] = [];
+        
+        // If data is directly an array
+        if (Array.isArray(data)) {
+          categoriesData = data;
+        }
+        // If data has a body property with categories
+        else if (data && typeof data === 'object' && (data as any).body && (data as any).body.categories && Array.isArray((data as any).body.categories)) {
+          categoriesData = (data as any).body.categories;
+        }
+        // If data has a categories property
+        else if (data && typeof data === 'object' && (data as any).categories && Array.isArray((data as any).categories)) {
+          categoriesData = (data as any).categories;
+        }
+        // If data is not an array, log the structure and set empty array
+        else {
+          console.error("API returned unexpected data structure:", data);
+          setError("Invalid data format received from server");
+          setCategories([]);
+          return;
+        }
+        
+        setCategories(categoriesData);
       } catch (err: any) {
+        console.error("Error fetching categories:", err);
         setError(err.response?.data?.message || "Failed to load categories");
+        setCategories([]);
       } finally {
         setLoading(false);
       }
@@ -57,26 +86,15 @@ export default function CategoryList() {
     try {
       await categoryApi.remove(deleteConfirm.categoryId);
       setDeleteConfirm({ show: false, categoryId: "", categoryName: "" });
-      setCategories(prev => prev.filter(c => c._id !== deleteConfirm.categoryId));
+      setCategories(prev => 
+        Array.isArray(prev) ? prev.filter(c => c._id !== deleteConfirm.categoryId) : []
+      );
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to delete category");
       console.error("Error deleting category:", err);
     }
   };
 
-  const handleToggleActive = async (category: Category) => {
-    try {
-      // Use address if available, otherwise fall back to _id
-      const identifier = category.address || category._id;
-      const updatedCategory = await categoryApi.toggleActive(identifier);
-      setCategories(prev => 
-        prev.map(c => c._id === category._id ? updatedCategory : c)
-      );
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to toggle category status");
-      console.error("Error toggling category status:", err);
-    }
-  };
 
   const handleSort = (key: keyof Category) => {
     setSortConfig((current) => ({
@@ -94,21 +112,25 @@ export default function CategoryList() {
     return new Date(dateString).toLocaleString();
   };
 
-  // Sort the data
-  const sortedCategories = [...categories].sort((a, b) => {
+  // Sort the data - ensure categories is always an array
+  const sortedCategories = Array.isArray(categories) ? [...categories].sort((a, b) => {
     if (!sortConfig.key) return 0;
     const aValue = a[sortConfig.key];
     const bValue = b[sortConfig.key];
     if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
     if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
     return 0;
-  });
+  }) : [];
 
   // Filter the sorted data
-  const filteredCategories = sortedCategories.filter(
+  const filteredCategories = Array.isArray(sortedCategories) ? sortedCategories.filter(
     category => 
-      category.name.toLowerCase().includes(searchTerm.toLowerCase()) 
-  );
+      category && category.name && (
+        category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (category.tag && category.tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+  ) : [];
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredCategories.length / itemsPerPage);
@@ -156,7 +178,7 @@ export default function CategoryList() {
       <div className="mb-4">
         <Input
           type="text"
-          placeholder="Search categories..."
+          placeholder="Search categories by name, tag, or description..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full md:w-64"
@@ -185,10 +207,10 @@ export default function CategoryList() {
                   </th>
                   
                   <th 
-                    onClick={() => handleSort("isActive")} 
+                    onClick={() => handleSort("tag")} 
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                   >
-                    Status {renderSortIcon("isActive")}
+                    Tag {renderSortIcon("tag")}
                   </th>
                   <th 
                     onClick={() => handleSort("createdAt")} 
@@ -208,28 +230,14 @@ export default function CategoryList() {
                       <td className="px-6 py-4 whitespace-nowrap font-medium">{category.name}</td>
                       
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 rounded ${
-                          category.isActive 
-                            ? "bg-green-100 text-green-800" 
-                            : "bg-red-100 text-red-800"
-                        }`}>
-                          {category.isActive ? "Active" : "Inactive"}
+                        <span className="px-2 py-1 rounded bg-blue-100 text-blue-800">
+                          {category.tag || category.description || 'N/A'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(category.createdAt)}
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
-                        <button
-                          onClick={() => handleToggleActive(category)}
-                          className={`px-2 py-1 rounded text-xs font-medium ${
-                            category.isActive 
-                              ? "bg-red-100 text-red-800 hover:bg-red-200" 
-                              : "bg-green-100 text-green-800 hover:bg-green-200"
-                          }`}
-                        >
-                          {category.isActive ? "Deactivate" : "Activate"}
-                        </button>
                         <Link 
                           to={`/categories/edit/${category._id}`} 
                           className="text-indigo-600 hover:text-indigo-900 mr-3"
@@ -247,7 +255,7 @@ export default function CategoryList() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
                       No categories found
                     </td>
                   </tr>

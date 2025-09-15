@@ -60,6 +60,10 @@ export const authApi = {
       // If response has a body property (successful response), use it
       if (response.data.body) {
         console.log('authApi: Using response.body:', response.data.body);
+        console.log('authApi: Extracted token:', response.data.body.token);
+        console.log('authApi: Extracted user:', response.data.body.user);
+        console.log('authApi: Extracted expiresIn:', response.data.body.expiresIn || response.data.body.expires_in);
+        
         // Extract token, user, and expiresIn from the body
         return {
           token: response.data.body.token,
@@ -71,6 +75,9 @@ export const authApi = {
       
       // If response has a data property, use it, otherwise use the response directly
       const data = response.data.data || response.data;
+      console.log('authApi: Using fallback data:', data);
+      console.log('authApi: Fallback token:', data.token);
+      console.log('authApi: Fallback user:', data.user);
       return data;
     } catch (error: any) {
       console.error('authApi: Login error details:', error.response?.data);
@@ -95,22 +102,39 @@ export const authApi = {
     return response.data;
   },
 
-  // Get user profile
+  // Get user profile - Note: This might need to be a different endpoint
+  // Since there's no /admin/user/profile in the API docs, using the current user's profile
   getProfile: async (): Promise<UserProfile> => {
-    const response = await axiosInstance.get('/auth/profile');
-    return response.data;
+    // For now, return the user data from sessionStorage since we don't have a profile endpoint
+    const userStr = sessionStorage.getItem('user');
+    if (userStr) {
+      return JSON.parse(userStr);
+    }
+    throw new Error('User not found in session');
   },
 
-  // Update user profile
+  // Update user profile - Note: No update profile endpoint in admin API
   updateProfile: async (profileData: Partial<UserProfile>): Promise<UserProfile> => {
-    const response = await axiosInstance.put('/auth/profile', profileData);
-    return response.data;
+    // For now, just update the sessionStorage
+    const userStr = sessionStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      const updatedUser = { ...user, ...profileData };
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    }
+    throw new Error('User not found in session');
   },
 
-  // Get user balance
+  // Get user balance - Note: No current user balance endpoint, only by ID
   getBalance: async (): Promise<{ balance: number }> => {
-    const response = await axiosInstance.get('/auth/balance');
-    return response.data;
+    // For now, return 0 or get from user data
+    const userStr = sessionStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      return { balance: user.balance || 0 };
+    }
+    return { balance: 0 };
   },
 
   // Forgot password
@@ -140,18 +164,36 @@ export const authApi = {
   // Get all users (admin only)
   getUsers: async (params?: { limit?: number; offset?: number; search?: string }): Promise<{ users: UserProfile[]; total: number }> => {
     const response = await axiosInstance.get('/admin/user/list', { params });
+    
+    // Handle different response structures
+    if (response.data.body) {
+      return response.data.body;
+    }
+    
     return response.data;
   },
 
   // Get user by ID (admin only)
   getUserById: async (id: string): Promise<UserProfile> => {
     const response = await axiosInstance.get(`/admin/user/findOne/${id}`);
+    
+    // Handle different response structures
+    if (response.data.body) {
+      return response.data.body;
+    }
+    
     return response.data;
   },
 
   // Get user balance by ID (admin only)
   getUserBalance: async (id: string): Promise<{ balance: number }> => {
     const response = await axiosInstance.get(`/admin/user/balance/${id}`);
+    
+    // Handle different response structures
+    if (response.data.body) {
+      return response.data.body;
+    }
+    
     return response.data;
   },
 }; 

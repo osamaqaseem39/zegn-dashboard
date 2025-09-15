@@ -5,10 +5,8 @@ import Input from "../../components/form/input/InputField";
 
 interface CategoryFormData {
   name: string;
-  description: string;
+  tag: string;
   icon: string;
-  isActive: boolean;
-  sortOrder: number;
 }
 
 export default function CategoryForm() {
@@ -20,10 +18,8 @@ export default function CategoryForm() {
   const [error, setError] = useState("");
   const [formData, setFormData] = useState<CategoryFormData>({
     name: "",
-    description: "",
+    tag: "",
     icon: "",
-    isActive: true,
-    sortOrder: 0,
   });
 
   const fetchCategoryDetails = useCallback(async () => {
@@ -31,10 +27,8 @@ export default function CategoryForm() {
       const categoryData = await categoryApi.getAdminCategoryById(categoryId as string);
       setFormData({
         name: categoryData.name,
-        description: categoryData.description,
-        icon: categoryData.icon,
-        isActive: categoryData.isActive,
-        sortOrder: categoryData.sortOrder,
+        tag: categoryData.tag || categoryData.description || "", // Handle both tag and description
+        icon: categoryData.icon || "",
       });
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to fetch category details");
@@ -52,7 +46,7 @@ export default function CategoryForm() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'isActive' ? (e.target as HTMLInputElement).checked : name === 'sortOrder' ? Number(value) : value
+      [name]: value
     }));
   };
 
@@ -60,6 +54,25 @@ export default function CategoryForm() {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    // Basic validation
+    if (!formData.name.trim()) {
+      setError("Category name is required");
+      setLoading(false);
+      return;
+    }
+    
+    if (!formData.tag.trim()) {
+      setError("Category tag is required");
+      setLoading(false);
+      return;
+    }
+    
+    if (!formData.icon.trim()) {
+      setError("Category icon is required");
+      setLoading(false);
+      return;
+    }
 
     try {
       if (isEditMode) {
@@ -69,8 +82,28 @@ export default function CategoryForm() {
       }
       navigate("/categories");
     } catch (err: any) {
-      setError(err.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} category`);
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} category:`, err);
+      console.error("Error response:", err.response?.data);
+      console.error("Error status:", err.response?.status);
+      
+      // Extract more detailed error information
+      let errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} category`;
+      
+      if (err.response?.data) {
+        if (err.response.data.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.response.data.error) {
+          errorMessage = err.response.data.error;
+        } else if (typeof err.response.data === 'string') {
+          errorMessage = err.response.data;
+        } else if (err.response.data.errors) {
+          // Handle validation errors
+          const validationErrors = Object.values(err.response.data.errors).flat();
+          errorMessage = validationErrors.join(', ');
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -112,47 +145,18 @@ export default function CategoryForm() {
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Description *
+            <label htmlFor="tag" className="block text-sm font-medium text-gray-700 mb-1">
+              Tag *
             </label>
             <Input
-              id="description"
-              name="description"
+              id="tag"
+              name="tag"
               type="text"
-              value={formData.description}
+              value={formData.tag}
               onChange={handleChange}
-              placeholder="Enter category description"
+              placeholder="Enter category tag (e.g., meme, defi, nft)"
               className="w-full"
             />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="isActive" className="block text-sm font-medium text-gray-700 mb-1">
-                Active
-              </label>
-              <input
-                id="isActive"
-                name="isActive"
-                type="checkbox"
-                checked={formData.isActive}
-                onChange={handleChange}
-                className="h-4 w-4"
-              />
-            </div>
-            <div>
-              <label htmlFor="sortOrder" className="block text-sm font-medium text-gray-700 mb-1">
-                Sort Order
-              </label>
-              <Input
-                id="sortOrder"
-                name="sortOrder"
-                type="number"
-                value={formData.sortOrder}
-                onChange={handleChange}
-                placeholder="0"
-                className="w-full"
-              />
-            </div>
           </div>
 
           <div>
