@@ -57,28 +57,33 @@ export interface SolscanTokenPrice {
 // Helper function to fetch token data from Solana.fm
 const fetchFromSolanaFm = async (address: string): Promise<SolscanTokenMetadata> => {
   try {
-    const response = await solanaFmApi.get(`/tokens/${address}`);
-    const data = response.data;
+    const [tokenResponse, supplyResponse] = await Promise.allSettled([
+      solanaFmApi.get(`/tokens/${address}`),
+      solanaFmApi.get(`/tokens/${address}/supply`)
+    ]);
+    
+    const tokenData = tokenResponse.status === 'fulfilled' ? tokenResponse.value.data : {};
+    const supplyData = supplyResponse.status === 'fulfilled' ? supplyResponse.value.data : {};
     
     return {
-      address: data.mint || address,
-      symbol: data.tokenList?.symbol || 'UNKNOWN',
-      name: data.tokenList?.name || 'Unknown Token',
-      decimals: data.decimals || 9,
+      address: tokenData.mint || address,
+      symbol: tokenData.tokenList?.symbol || 'UNKNOWN',
+      name: tokenData.tokenList?.name || 'Unknown Token',
+      decimals: tokenData.decimals || supplyData.decimals || 9,
       holder: 0, // Not available in this response
       creator: '', // Not available in this response
       create_tx: '', // Not available in this response
       created_time: 0, // Not available in this response
-      icon: data.tokenList?.image || '',
+      icon: tokenData.tokenList?.image || '',
       metadata: {
-        name: data.tokenList?.name || 'Unknown Token',
-        symbol: data.tokenList?.symbol || 'UNKNOWN',
+        name: tokenData.tokenList?.name || 'Unknown Token',
+        symbol: tokenData.tokenList?.symbol || 'UNKNOWN',
         description: 'Token metadata from Solana.fm',
-        image: data.tokenList?.image || ''
+        image: tokenData.tokenList?.image || ''
       },
-      mint_authority: data.mintAuthority || null,
-      freeze_authority: data.freezeAuthority || null,
-      supply: '0', // Not available in this response
+      mint_authority: tokenData.mintAuthority || null,
+      freeze_authority: tokenData.freezeAuthority || null,
+      supply: supplyData.circulatingSupply?.toString() || '0',
       price: 0, // Not available in this response
       volume_24h: 0, // Not available in this response
       market_cap: 0, // Not available in this response
@@ -112,6 +117,26 @@ const getBasicTokenInfoFromSolanaFm = async (address: string) => {
     };
   } catch (error) {
     console.error('Error fetching basic token info from Solana.fm:', error);
+    throw error;
+  }
+};
+
+// Helper function to get token supply data from Solana.fm
+const getTokenSupplyFromSolanaFm = async (address: string) => {
+  try {
+    const response = await solanaFmApi.get(`/tokens/${address}/supply`);
+    const data = response.data;
+    
+    return {
+      circulatingSupply: data.circulatingSupply || 0,
+      tokenWithheldAmount: data.tokenWithheldAmount || 0,
+      userTotalWithheldAmount: data.userTotalWithheldAmount || 0,
+      totalWithheldAmount: data.totalWithheldAmount || 0,
+      realCirculatingSupply: data.realCirculatingSupply || 0,
+      decimals: data.decimals || 9
+    };
+  } catch (error) {
+    console.error('Error fetching token supply from Solana.fm:', error);
     throw error;
   }
 };
@@ -269,6 +294,58 @@ export const solscanApiService = {
         mintAuthority: null,
         freezeAuthority: null,
         tokenType: 'Legacy'
+      };
+    }
+  },
+
+  // Get token supply data from Solana.fm
+  getTokenSupply: async (address: string) => {
+    try {
+      return await getTokenSupplyFromSolanaFm(address);
+    } catch (error) {
+      console.error('Error fetching token supply:', error);
+      return {
+        circulatingSupply: 0,
+        tokenWithheldAmount: 0,
+        userTotalWithheldAmount: 0,
+        totalWithheldAmount: 0,
+        realCirculatingSupply: 0,
+        decimals: 9
+      };
+    }
+  },
+
+  // Get comprehensive token data (basic info + supply) from Solana.fm
+  getComprehensiveTokenData: async (address: string) => {
+    try {
+      const [basicInfo, supplyData] = await Promise.all([
+        getBasicTokenInfoFromSolanaFm(address),
+        getTokenSupplyFromSolanaFm(address)
+      ]);
+      
+      return {
+        ...basicInfo,
+        supply: supplyData
+      };
+    } catch (error) {
+      console.error('Error fetching comprehensive token data:', error);
+      return {
+        address,
+        symbol: 'UNKNOWN',
+        name: 'Unknown Token',
+        decimals: 9,
+        image: '',
+        mintAuthority: null,
+        freezeAuthority: null,
+        tokenType: 'Legacy',
+        supply: {
+          circulatingSupply: 0,
+          tokenWithheldAmount: 0,
+          userTotalWithheldAmount: 0,
+          totalWithheldAmount: 0,
+          realCirculatingSupply: 0,
+          decimals: 9
+        }
       };
     }
   },
