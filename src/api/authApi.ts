@@ -41,6 +41,7 @@ export interface LoginResponse {
   message: string;
   token: string;
   user: UserProfile;
+  expiresIn?: number; // Token expiry time in seconds
 }
 
 export const authApi = {
@@ -59,11 +60,12 @@ export const authApi = {
       // If response has a body property (successful response), use it
       if (response.data.body) {
         console.log('authApi: Using response.body:', response.data.body);
-        // Extract token and user from the body
+        // Extract token, user, and expiresIn from the body
         return {
           token: response.data.body.token,
           user: response.data.body.user,
-          message: response.data.status.message || 'Login successful'
+          message: response.data.status.message || 'Login successful',
+          expiresIn: response.data.body.expiresIn || response.data.body.expires_in
         };
       }
       
@@ -79,6 +81,17 @@ export const authApi = {
   // Register user
   register: async (userData: RegisterRequest): Promise<LoginResponse> => {
     const response = await axiosInstance.post('/auth/register', userData);
+    
+    // Handle different response structures for register
+    if (response.data.body) {
+      return {
+        token: response.data.body.token,
+        user: response.data.body.user,
+        message: response.data.status.message || 'Registration successful',
+        expiresIn: response.data.body.expiresIn || response.data.body.expires_in
+      };
+    }
+    
     return response.data;
   },
 
