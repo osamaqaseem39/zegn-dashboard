@@ -10,6 +10,14 @@ const solscanApi = axios.create({
   }
 });
 
+// Solana.fm API as fallback
+const solanaFmApi = axios.create({
+  baseURL: 'https://api.solana.fm/v1',
+  headers: {
+    'Accept': 'application/json'
+  }
+});
+
 export interface SolscanTokenMetadata {
   address: string;
   symbol: string;
@@ -46,8 +54,48 @@ export interface SolscanTokenPrice {
   marketCap: number;
 }
 
+// Helper function to fetch token data from Solana.fm
+const fetchFromSolanaFm = async (address: string): Promise<SolscanTokenMetadata> => {
+  try {
+    const response = await solanaFmApi.get(`/tokens/${address}`);
+    const data = response.data;
+    
+    return {
+      address: data.address || address,
+      symbol: data.symbol || 'UNKNOWN',
+      name: data.name || 'Unknown Token',
+      decimals: data.decimals || 9,
+      holder: data.holderCount || 0,
+      creator: data.creator || '',
+      create_tx: data.mintTx || '',
+      created_time: data.createdAt ? new Date(data.createdAt).getTime() / 1000 : 0,
+      icon: data.image || '',
+      metadata: {
+        name: data.name || 'Unknown Token',
+        symbol: data.symbol || 'UNKNOWN',
+        description: data.description || 'Token metadata from Solana.fm',
+        image: data.image || ''
+      },
+      mint_authority: data.mintAuthority || null,
+      freeze_authority: data.freezeAuthority || null,
+      supply: data.supply || '0',
+      price: data.price || 0,
+      volume_24h: data.volume24h || 0,
+      market_cap: data.marketCap || 0,
+      market_cap_rank: data.marketCapRank || 0,
+      price_change_24h: data.priceChange24h || 0,
+      website: data.website || '',
+      twitter: data.twitter || '',
+      description: data.description || 'Token metadata from Solana.fm'
+    };
+  } catch (error) {
+    console.error('Error fetching from Solana.fm:', error);
+    throw error;
+  }
+};
+
 export const solscanApiService = {
-  // Get token metadata by address using v2.0 API
+  // Get token metadata by address using v2.0 API with Solana.fm fallback
   getTokenMetadata: async (address: string): Promise<SolscanTokenMetadata> => {
     try {
       const response = await solscanApi.get(`/token/meta?address=${address}`);
@@ -55,45 +103,56 @@ export const solscanApiService = {
     } catch (error: any) {
       console.error('Error fetching token metadata from Solscan:', error);
       
-      // Handle API key level error gracefully
+      // Handle API key level error gracefully - try Solana.fm as fallback
       if (error.response?.data?.error_message?.includes('upgrade your api key level')) {
-        console.warn('Solscan API key level insufficient. Using fallback data.');
-        // Return minimal fallback data
-        return {
-          address,
-          symbol: 'UNKNOWN',
-          name: 'Unknown Token',
-          decimals: 9,
-          holder: 0,
-          creator: '',
-          create_tx: '',
-          created_time: 0,
-          icon: '',
-          metadata: {
-            name: 'Unknown Token',
+        console.warn('Solscan API key level insufficient. Trying Solana.fm as fallback...');
+        try {
+          return await fetchFromSolanaFm(address);
+        } catch (fmError) {
+          console.error('Solana.fm also failed, using minimal fallback data');
+          // Return minimal fallback data
+          return {
+            address,
             symbol: 'UNKNOWN',
-            description: 'Token metadata unavailable due to API limitations',
-            image: ''
-          },
-          mint_authority: null,
-          freeze_authority: null,
-          supply: '0',
-          price: 0,
-          volume_24h: 0,
-          market_cap: 0,
-          market_cap_rank: 0,
-          price_change_24h: 0,
-          website: '',
-          twitter: '',
-          description: 'Token metadata unavailable due to API limitations'
-        };
+            name: 'Unknown Token',
+            decimals: 9,
+            holder: 0,
+            creator: '',
+            create_tx: '',
+            created_time: 0,
+            icon: '',
+            metadata: {
+              name: 'Unknown Token',
+              symbol: 'UNKNOWN',
+              description: 'Token metadata unavailable due to API limitations',
+              image: ''
+            },
+            mint_authority: null,
+            freeze_authority: null,
+            supply: '0',
+            price: 0,
+            volume_24h: 0,
+            market_cap: 0,
+            market_cap_rank: 0,
+            price_change_24h: 0,
+            website: '',
+            twitter: '',
+            description: 'Token metadata unavailable due to API limitations'
+          };
+        }
       }
       
-      throw new Error('Failed to fetch token metadata from Solscan');
+      // For other errors, try Solana.fm as fallback
+      console.warn('Solscan failed, trying Solana.fm as fallback...');
+      try {
+        return await fetchFromSolanaFm(address);
+      } catch (fmError) {
+        throw new Error('Failed to fetch token metadata from both Solscan and Solana.fm');
+      }
     }
   },
 
-  // Get token price information using v2.0 API
+  // Get token price information using v2.0 API with Solana.fm fallback
   getTokenPrice: async (address: string, timeRange?: { start: string; end: string }): Promise<SolscanTokenPrice> => {
     try {
       let url = `/token/price?address=${address}`;
@@ -111,9 +170,18 @@ export const solscanApiService = {
     } catch (error: any) {
       console.error('Error fetching token price from Solscan:', error);
       
-      // Handle API key level error gracefully
-      if (error.response?.data?.error_message?.includes('upgrade your api key level')) {
-        console.warn('Solscan API key level insufficient. Using fallback price data.');
+      // Try Solana.fm as fallback for price data
+      console.warn('Solscan price failed, trying Solana.fm...');
+      try {
+        const fmData = await fetchFromSolanaFm(address);
+        return {
+          price: fmData.price || 0,
+          priceChange24h: fmData.price_change_24h || 0,
+          volume24h: fmData.volume_24h || 0,
+          marketCap: fmData.market_cap || 0
+        };
+      } catch (fmError) {
+        console.warn('Solana.fm price also failed, using fallback data');
         return {
           price: 0,
           priceChange24h: 0,
@@ -121,12 +189,10 @@ export const solscanApiService = {
           marketCap: 0
         };
       }
-      
-      throw new Error('Failed to fetch token price from Solscan');
     }
   },
 
-  // Get trending tokens using v2.0 API
+  // Get trending tokens using v2.0 API with Solana.fm fallback
   getTrendingTokens: async (limit: number = 20): Promise<SolscanTokenMetadata[]> => {
     try {
       const response = await solscanApi.get(`/token/trending?limit=${limit}`);
@@ -134,17 +200,19 @@ export const solscanApiService = {
     } catch (error: any) {
       console.error('Error fetching trending tokens from Solscan:', error);
       
-      // Handle API key level error gracefully
-      if (error.response?.data?.error_message?.includes('upgrade your api key level')) {
-        console.warn('Solscan API key level insufficient. Returning empty trending tokens list.');
+      // Try Solana.fm as fallback
+      console.warn('Solscan trending failed, trying Solana.fm...');
+      try {
+        const response = await solanaFmApi.get(`/tokens/trending?limit=${limit}`);
+        return response.data.data || [];
+      } catch (fmError) {
+        console.warn('Solana.fm trending also failed, returning empty list');
         return [];
       }
-      
-      throw new Error('Failed to fetch trending tokens from Solscan');
     }
   },
 
-  // Get top tokens using v2.0 API
+  // Get top tokens using v2.0 API with Solana.fm fallback
   getTopTokens: async (limit: number = 20): Promise<SolscanTokenMetadata[]> => {
     try {
       const response = await solscanApi.get(`/token/top?limit=${limit}`);
@@ -152,13 +220,15 @@ export const solscanApiService = {
     } catch (error: any) {
       console.error('Error fetching top tokens from Solscan:', error);
       
-      // Handle API key level error gracefully
-      if (error.response?.data?.error_message?.includes('upgrade your api key level')) {
-        console.warn('Solscan API key level insufficient. Returning empty top tokens list.');
+      // Try Solana.fm as fallback
+      console.warn('Solscan top tokens failed, trying Solana.fm...');
+      try {
+        const response = await solanaFmApi.get(`/tokens/top?limit=${limit}`);
+        return response.data.data || [];
+      } catch (fmError) {
+        console.warn('Solana.fm top tokens also failed, returning empty list');
         return [];
       }
-      
-      throw new Error('Failed to fetch top tokens from Solscan');
     }
   },
 
