@@ -64,6 +64,20 @@ export default function CategoryList() {
     }
   };
 
+  const handleToggleActive = async (category: Category) => {
+    try {
+      // Use address if available, otherwise fall back to _id
+      const identifier = category.address || category._id;
+      const updatedCategory = await categoryApi.toggleActive(identifier);
+      setCategories(prev => 
+        prev.map(c => c._id === category._id ? updatedCategory : c)
+      );
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to toggle category status");
+      console.error("Error toggling category status:", err);
+    }
+  };
+
   const handleSort = (key: keyof Category) => {
     setSortConfig((current) => ({
       key,
@@ -206,8 +220,16 @@ export default function CategoryList() {
                         {formatDate(category.createdAt)}
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
-                     
-                      
+                        <button
+                          onClick={() => handleToggleActive(category)}
+                          className={`px-2 py-1 rounded text-xs font-medium ${
+                            category.isActive 
+                              ? "bg-red-100 text-red-800 hover:bg-red-200" 
+                              : "bg-green-100 text-green-800 hover:bg-green-200"
+                          }`}
+                        >
+                          {category.isActive ? "Deactivate" : "Activate"}
+                        </button>
                         <Link 
                           to={`/categories/edit/${category._id}`} 
                           className="text-indigo-600 hover:text-indigo-900 mr-3"

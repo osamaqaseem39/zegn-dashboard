@@ -2,6 +2,7 @@ import axiosInstance from './axiosConfig';
 
 export interface Category {
   _id: string;
+  address?: string; // Optional address field for toggle active functionality
   name: string;
   description: string;
   icon: string;
@@ -52,9 +53,9 @@ export const categoryApi = {
     return response.data;
   },
 
-  // Toggle category active status by ID
-  toggleActive: async (id: string): Promise<Category> => {
-    const response = await axiosInstance.put(`/admin/category/active/${id}`);
+  // Toggle category active status by address
+  toggleActive: async (address: string): Promise<Category> => {
+    const response = await axiosInstance.put(`/admin/category/active/${address}`);
     return response.data;
   },
 
