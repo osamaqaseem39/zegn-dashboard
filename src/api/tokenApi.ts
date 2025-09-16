@@ -120,10 +120,10 @@ export const tokenApi = {
     return response.data;
   },
 
-  // Get enhanced token metadata from Solana FM
+  // Get enhanced token metadata from Solscan
   getEnhancedTokenMetadata: async (address: string) => {
-    const { getCompleteTokenData } = await import('./solanaFmApi');
-    return await getCompleteTokenData(address);
+    const { solscanApiService } = await import('./solscanApi');
+    return await solscanApiService.getComprehensiveTokenData(address);
   },
 
   // Admin endpoints
