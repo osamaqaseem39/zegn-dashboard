@@ -86,9 +86,11 @@ export interface TokenFilters {
 }
 
 export const tokenApi = {
-  // Get all tokens
+  // Get all tokens (admin endpoint)
   getTokens: async (): Promise<Token[]> => {
-    const response = await axiosInstance.get('/tokens');
+    console.log('TokenApi: Fetching tokens from /admin/token');
+    const response = await axiosInstance.get('/admin/token');
+    console.log('TokenApi: Response received:', response.data);
     // Backend returns { tokens: Token[] }
     return response.data.tokens ?? response.data;
   },
