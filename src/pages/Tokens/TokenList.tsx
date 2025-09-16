@@ -56,7 +56,7 @@ export default function TokenList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: "", direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
+  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('inactive');
   const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean; tokenId: string; tokenName: string}>({
     show: false,
     tokenId: "",
