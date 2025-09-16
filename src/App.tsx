@@ -75,10 +75,8 @@ export default function App() {
               <Route path="/transactions/history" element={<TransactionHistoryForm />} />
               
               {/* Market Analysis */}
-              <Route path="/market">
-                <Route path="trending-tokens" element={<TrendingTokens />} />
-                <Route path="top-tokens" element={<TopTokens />} />
-              </Route>
+              <Route path="/market/trending-tokens" element={<TrendingTokens />} />
+              <Route path="/market/top-tokens" element={<TopTokens />} />
             </Route>
             
             {/* Auth Routes */}
