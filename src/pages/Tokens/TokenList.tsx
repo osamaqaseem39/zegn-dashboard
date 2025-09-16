@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { tokenApi } from "../../api/tokenApi";
 import Input from "../../components/form/input/InputField";
 import { PageMeta } from '../../components/common/PageMeta';
+import { useAuth } from '../../context/AuthContext';
+import ErrorHandler from '../../utils/errorHandler';
 
 interface Token {
   _id: string;
@@ -49,6 +51,8 @@ interface ToggleConfirmation {
 }
 
 export default function TokenList() {
+  const { user, loading: authLoading } = useAuth();
+  
   // Initialize with empty array - data will be loaded from API
   const [tokens, setTokens] = useState<Token[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,28 +75,60 @@ export default function TokenList() {
     property: 'active',
     currentState: false
   });
+  const [retryCount, setRetryCount] = useState(0);
 
+  // Only fetch tokens when authentication is complete and user is available
   useEffect(() => {
-    fetchTokens();
-  }, []);
+    if (!authLoading && user) {
+      fetchTokens();
+    }
+  }, [authLoading, user]);
 
   const fetchTokens = async () => {
     try {
       setLoading(true);
       setError(""); // Clear any previous errors
       console.log("TokenList: Starting to fetch tokens...");
+      console.log("TokenList: API Base URL:", import.meta.env.VITE_API_BASE_URL);
+      console.log("TokenList: Full URL will be:", `${import.meta.env.VITE_API_BASE_URL || 'https://degn.vercel.app/api/v1'}/admin/token`);
+      
       const data = await tokenApi.getTokens();
       console.log("TokenList: Received tokens data:", data);
+      console.log("TokenList: Data type:", typeof data);
+      console.log("TokenList: Is array:", Array.isArray(data));
       console.log("TokenList: Number of tokens:", data?.length || 0);
-      setTokens(data || []);
+      
+      if (Array.isArray(data)) {
+        setTokens(data);
+      } else {
+        console.error("TokenList: Data is not an array:", data);
+        setError("Invalid data format received from API");
+        setTokens([]);
+      }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "Failed to load tokens";
-      setError(errorMessage);
       console.error("Error fetching tokens:", err);
       console.error("Error response:", err.response?.data);
+      console.error("Error status:", err.response?.status);
+      console.error("Error headers:", err.response?.headers);
+      
+      // Use the error handler to get a standardized error
+      const appError = ErrorHandler.handleApiError(err);
+      setError(appError.message);
+      
+      // Only clear tokens for non-auth errors
+      if (!appError.isAuthError) {
+        setTokens([]);
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  // Retry function for failed API calls
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    setError("");
+    fetchTokens();
   };
 
   const handleDeleteConfirm = async () => {
@@ -159,6 +195,14 @@ export default function TokenList() {
   const statusFilteredTokens = tokens.filter(token => 
     activeTab === 'active' ? token.isActive : !token.isActive
   );
+
+  // Debug logging
+  console.log('TokenList Debug:', {
+    totalTokens: tokens.length,
+    activeTab,
+    statusFilteredTokens: statusFilteredTokens.length,
+    tokens: tokens.map(t => ({ name: t.name, symbol: t.symbol, isActive: t.isActive }))
+  });
 
   // Sort the data
   const sortedTokens = [...statusFilteredTokens].sort((a, b) => {
@@ -289,10 +333,16 @@ export default function TokenList() {
     }
   };
 
-  if (loading) {
+  // Show loading spinner while authentication is in progress or data is loading
+  if (authLoading || loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">
+            {authLoading ? "Loading..." : "Loading tokens..."}
+          </p>
+        </div>
       </div>
     );
   }
@@ -345,9 +395,35 @@ export default function TokenList() {
 
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-600 rounded-md">
-            {error}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Error loading tokens</p>
+                <p className="text-sm mt-1">{error}</p>
+                {retryCount > 0 && (
+                  <p className="text-xs mt-1 text-gray-500">Retry attempt: {retryCount}</p>
+                )}
+              </div>
+              <button
+                onClick={handleRetry}
+                disabled={loading}
+                className="ml-4 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? "Retrying..." : "Retry"}
+              </button>
+            </div>
           </div>
         )}
+
+        {/* Debug information */}
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 text-blue-600 rounded-md">
+          <p>Debug Info:</p>
+          <p>Total tokens: {tokens.length}</p>
+          <p>Active tab: {activeTab}</p>
+          <p>Filtered tokens: {statusFilteredTokens.length}</p>
+          <p>Current tokens: {currentTokens.length}</p>
+          <p>Loading: {loading.toString()}</p>
+          <p>Error: {error || 'None'}</p>
+        </div>
 
         {loading ? (
           <div className="text-center py-4">Loading...</div>

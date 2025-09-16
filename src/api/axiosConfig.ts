@@ -9,6 +9,7 @@ const axiosInstance = axios.create({
     'Accept': 'application/json',
   },
   withCredentials: false,
+  timeout: 30000, // 30 seconds timeout
 });
 
 // Request Interceptor
@@ -33,6 +34,13 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
+    // Handle network errors
+    if (!error.response) {
+      console.error('Axios: Network error:', error.message);
+      error.code = 'NETWORK_ERROR';
+      return Promise.reject(error);
+    }
+    
     // Only handle 401 if we have a token and this is not already a retry
     const token = sessionStorage.getItem('token');
     if (error.response?.status === 401 && token && !originalRequest._retry) {
@@ -44,6 +52,14 @@ axiosInstance.interceptors.response.use(
       // Just reject the error, don't redirect
       return Promise.reject(error);
     }
+    
+    // Log other errors for debugging
+    console.error('Axios: API error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      url: error.config?.url
+    });
     
     return Promise.reject(error);
   }

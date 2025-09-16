@@ -36,62 +36,71 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      console.log('AuthContext: Initializing auth...');
-      console.log('AuthContext: hasValidToken:', SessionManager.hasValidToken());
-      console.log('AuthContext: storedToken:', SessionManager.getToken());
-      console.log('AuthContext: storedUser:', SessionManager.getUser());
-      
-      // Check debug info from previous login
-      const debugLoginResponse = sessionStorage.getItem('debug_login_response');
-      const debugAuthState = sessionStorage.getItem('debug_auth_state');
-      console.log('AuthContext: Debug login response:', debugLoginResponse ? JSON.parse(debugLoginResponse) : 'None');
-      console.log('AuthContext: Debug auth state:', debugAuthState ? JSON.parse(debugAuthState) : 'None');
-      
-      // Check if we have a valid token
-      if (SessionManager.hasValidToken()) {
-        const storedToken = SessionManager.getToken();
-        const storedUser = SessionManager.getUser();
+      try {
+        console.log('AuthContext: Initializing auth...');
+        console.log('AuthContext: hasValidToken:', SessionManager.hasValidToken());
+        console.log('AuthContext: storedToken:', SessionManager.getToken());
+        console.log('AuthContext: storedUser:', SessionManager.getUser());
         
-        if (storedToken && storedUser) {
-          // If we have both token and user data, use them directly
-          console.log('AuthContext: Using stored token and user data');
-          setToken(storedToken);
-          setUser(storedUser);
-          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-        } else if (storedToken) {
-          // Only validate token if we don't have user data
-          console.log('AuthContext: Validating token with API call');
-          try {
-            // Set the token in axios headers
-            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-            
-            // Validate token by getting user profile
-            const userProfile = await authApi.getProfile();
-            setUser(userProfile);
+        // Check debug info from previous login
+        const debugLoginResponse = sessionStorage.getItem('debug_login_response');
+        const debugAuthState = sessionStorage.getItem('debug_auth_state');
+        console.log('AuthContext: Debug login response:', debugLoginResponse ? JSON.parse(debugLoginResponse) : 'None');
+        console.log('AuthContext: Debug auth state:', debugAuthState ? JSON.parse(debugAuthState) : 'None');
+        
+        // Check if we have a valid token
+        if (SessionManager.hasValidToken()) {
+          const storedToken = SessionManager.getToken();
+          const storedUser = SessionManager.getUser();
+          
+          if (storedToken && storedUser) {
+            // If we have both token and user data, use them directly
+            console.log('AuthContext: Using stored token and user data');
             setToken(storedToken);
-            
-            // Update stored user data
-            SessionManager.setUser(userProfile);
-            console.log('AuthContext: Token validation successful');
-          } catch (err) {
-            console.error('Token validation failed:', err);
-            // Token is invalid, clear session
-            SessionManager.clearSession();
-            setToken(null);
-            setUser(null);
-            delete axiosInstance.defaults.headers.common['Authorization'];
+            setUser(storedUser);
+            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+          } else if (storedToken) {
+            // Only validate token if we don't have user data
+            console.log('AuthContext: Validating token with API call');
+            try {
+              // Set the token in axios headers
+              axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+              
+              // Validate token by getting user profile
+              const userProfile = await authApi.getProfile();
+              setUser(userProfile);
+              setToken(storedToken);
+              
+              // Update stored user data
+              SessionManager.setUser(userProfile);
+              console.log('AuthContext: Token validation successful');
+            } catch (err) {
+              console.error('Token validation failed:', err);
+              // Token is invalid, clear session
+              SessionManager.clearSession();
+              setToken(null);
+              setUser(null);
+              delete axiosInstance.defaults.headers.common['Authorization'];
+            }
           }
+        } else {
+          // Clear any invalid session data
+          console.log('AuthContext: No valid token, clearing session');
+          SessionManager.clearSession();
+          setToken(null);
+          setUser(null);
         }
-      } else {
-        // Clear any invalid session data
-        console.log('AuthContext: No valid token, clearing session');
+      } catch (error) {
+        console.error('AuthContext: Error during initialization:', error);
+        // On any error during initialization, clear session and continue
         SessionManager.clearSession();
         setToken(null);
         setUser(null);
+        delete axiosInstance.defaults.headers.common['Authorization'];
+      } finally {
+        console.log('AuthContext: Initialization complete, setting loading to false');
+        setLoading(false);
       }
-      
-      console.log('AuthContext: Initialization complete, setting loading to false');
-      setLoading(false);
     };
 
     initializeAuth();

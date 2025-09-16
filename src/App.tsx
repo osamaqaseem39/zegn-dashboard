@@ -4,6 +4,8 @@ import { AuthProvider } from "./context/AuthContext";
 import AppLayout from "./layout/AppLayout";
 import AuthLayout from "./layout/AuthLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ErrorBoundary from "./components/ErrorBoundary";
+import PageReloadHandler from "./components/PageReloadHandler";
 import NotFound from './pages/NotFound';
 
 // Lazy load components for better code splitting
@@ -34,10 +36,12 @@ const LoadingSpinner = () => (
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Suspense fallback={<LoadingSpinner />}>
-          <Routes>
+    <ErrorBoundary>
+      <AuthProvider>
+        <PageReloadHandler>
+          <Router>
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
             {/* Protected Routes */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route index path="/" element={<Dashboard />} />
@@ -84,9 +88,11 @@ export default function App() {
             
             {/* Add this at the very bottom of your Routes */}
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </Router>
-    </AuthProvider>
+              </Routes>
+            </Suspense>
+          </Router>
+        </PageReloadHandler>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
