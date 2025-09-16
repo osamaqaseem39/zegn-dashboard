@@ -1,25 +1,15 @@
 import { useEffect, useState } from "react";
 import { tokenApi } from "../../api/tokenApi";
+import { SolscanTokenMetadata } from "../../api/solscanApi";
 import { Link } from 'react-router-dom';
 
-interface TopToken {
-  address: string;
-  decimals: number;
-  name: string;
-  symbol: string;
-  market_cap: number;
-  price: number;
-  price_24h_change: number;
-  holder: number;
-}
-
 export default function TopTokens() {
-  const [tokens, setTokens] = useState<TopToken[]>([]);
+  const [tokens, setTokens] = useState<SolscanTokenMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{
-    key: keyof TopToken;
+    key: keyof SolscanTokenMetadata;
     direction: 'asc' | 'desc';
   }>({ key: 'market_cap', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,7 +55,7 @@ export default function TopTokens() {
     }).format(price);
   };
 
-  const handleSort = (key: keyof TopToken) => {
+  const handleSort = (key: keyof SolscanTokenMetadata) => {
     setSortConfig({
       key,
       direction: sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc'
@@ -85,7 +75,7 @@ export default function TopTokens() {
       return 0;
     });
 
-  const SortIcon = ({ column }: { column: keyof TopToken }) => (
+  const SortIcon = ({ column }: { column: keyof SolscanTokenMetadata }) => (
     <span className="ml-1 inline-block">
       {sortConfig.key === column ? (
         sortConfig.direction === 'asc' ? '↑' : '↓'
@@ -224,9 +214,9 @@ export default function TopTokens() {
                 </th>
                 <th 
                   className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('price_24h_change')}
+                  onClick={() => handleSort('price_change_24h')}
                 >
-                  24h Change <SortIcon column="price_24h_change" />
+                  24h Change <SortIcon column="price_change_24h" />
                 </th>
                 <th 
                   className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
@@ -262,9 +252,9 @@ export default function TopTokens() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <span className={`text-sm ${token.price_24h_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {token.price_24h_change != null ? (
-                        `${token.price_24h_change >= 0 ? '+' : ''}${token.price_24h_change.toFixed(2)}%`
+                    <span className={`text-sm ${(token.price_change_24h || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {token.price_change_24h != null ? (
+                        `${(token.price_change_24h || 0) >= 0 ? '+' : ''}${(token.price_change_24h || 0).toFixed(2)}%`
                       ) : 'N/A'}
                     </span>
                   </td>

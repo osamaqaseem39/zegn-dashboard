@@ -1,21 +1,15 @@
 import { useEffect, useState } from "react";
 import { tokenApi } from "../../api/tokenApi";
+import { SolscanTokenMetadata } from "../../api/solscanApi";
 import { Link } from 'react-router-dom';
 
-interface TrendingToken {
-  address: string;
-  decimals: number;
-  name: string;
-  symbol: string;
-}
-
 export default function TrendingTokens() {
-  const [tokens, setTokens] = useState<TrendingToken[]>([]);
+  const [tokens, setTokens] = useState<SolscanTokenMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{
-    key: keyof TrendingToken;
+    key: keyof SolscanTokenMetadata;
     direction: 'asc' | 'desc';
   }>({ key: 'name', direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
@@ -48,7 +42,7 @@ export default function TrendingTokens() {
   };
 
 
-  const handleSort = (key: keyof TrendingToken) => {
+  const handleSort = (key: keyof SolscanTokenMetadata) => {
     setSortConfig({
       key,
       direction: sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc'
@@ -84,7 +78,7 @@ export default function TrendingTokens() {
   const currentItems = filteredAndSortedTokens.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredAndSortedTokens.length / itemsPerPage);
 
-  const SortIcon = ({ column }: { column: keyof TrendingToken }) => (
+  const SortIcon = ({ column }: { column: keyof SolscanTokenMetadata }) => (
     <span className="ml-1 inline-block">
       {sortConfig.key === column ? (
         sortConfig.direction === 'asc' ? '↑' : '↓'
