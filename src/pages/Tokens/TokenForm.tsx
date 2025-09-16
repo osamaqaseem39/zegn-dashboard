@@ -14,27 +14,38 @@ interface SocialUrls {
   github?: string;
 }
 
+interface GraphDataInfo {
+  isCronUpdate?: boolean;
+  isMaxGraphDataAdded?: boolean;
+  isOneDayGraphDataAdded?: boolean;
+  isFourHourGraphDataAdded?: boolean;
+}
+
 interface TokenFormData {
   _id?: string;
   tokenAddress: string;
-  description: string;
-  category: string;
-  graphType: string;
-  cmcId: string;
-  cgId: string;
   symbol: string;
-  decimals?: number;
-  slippage?: string;
-  socialUrls?: SocialUrls;
   name?: string;
+  description?: string;
+  decimals?: number;
   icon?: string;
   marketCap?: string;
+  tokenCreatedAt?: string;
   holder?: string;
   supply?: string;
   price?: string;
   volume?: number;
   priceChange24h?: string;
-  tokenCreatedAt?: string;
+  cmcId?: string;
+  cgId?: string;
+  category?: string;
+  graphType?: string;
+  isSpotlight?: boolean;
+  isHome?: boolean;
+  isActive?: boolean;
+  isLive?: boolean;
+  socialUrls?: SocialUrls;
+  grapDataInfo?: GraphDataInfo;
 }
 
 interface Category {
@@ -53,15 +64,26 @@ export default function TokenForm() {
 
   const [formData, setFormData] = useState<TokenFormData>({
     tokenAddress: "",
+    symbol: "",
     name: "",
     description: "",
-    category: "",
-    graphType: "cmc",
+    decimals: undefined,
+    icon: "",
+    marketCap: "",
+    tokenCreatedAt: "",
+    holder: "",
+    supply: "",
+    price: "",
+    volume: undefined,
+    priceChange24h: "",
     cmcId: "",
     cgId: "",
-    symbol: "",
-    decimals: undefined,
-    slippage: "",
+    category: "",
+    graphType: "cmc",
+    isSpotlight: false,
+    isHome: false,
+    isActive: true,
+    isLive: true,
     socialUrls: {
       web: "",
       instagram: "",
@@ -70,7 +92,12 @@ export default function TokenForm() {
       telegram: "",
       github: "",
     },
-    icon: "",
+    grapDataInfo: {
+      isCronUpdate: false,
+      isMaxGraphDataAdded: false,
+      isOneDayGraphDataAdded: false,
+      isFourHourGraphDataAdded: false,
+    },
   });
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -96,16 +123,40 @@ export default function TokenForm() {
       setFormData({
         _id: token._id,
         tokenAddress: token.tokenAddress,
+        symbol: token.symbol,
+        name: token.name,
         description: token.description,
-        category: token.category,
-        graphType: token.graphType,
+        decimals: token.decimals,
+        icon: token.icon,
+        marketCap: token.marketCap,
+        tokenCreatedAt: token.tokenCreatedAt,
+        holder: token.holder,
+        supply: token.supply,
+        price: token.price,
+        volume: token.volume,
+        priceChange24h: token.priceChange24h,
         cmcId: token.cmcId,
         cgId: token.cgId,
-        symbol: token.symbol,
-        decimals: token.decimals,
-        slippage: token.slippage,
-        socialUrls: token.socialUrls,
-        icon: token.icon,
+        category: token.category,
+        graphType: token.graphType,
+        isSpotlight: token.isSpotlight,
+        isHome: token.isHome,
+        isActive: token.isActive,
+        isLive: token.isLive,
+        socialUrls: token.socialUrls || {
+          web: "",
+          instagram: "",
+          x: "",
+          reddit: "",
+          telegram: "",
+          github: "",
+        },
+        grapDataInfo: token.grapDataInfo || {
+          isCronUpdate: false,
+          isMaxGraphDataAdded: false,
+          isOneDayGraphDataAdded: false,
+          isFourHourGraphDataAdded: false,
+        },
       });
     } catch (err: any) {
       console.error("Error fetching token details:", err);
@@ -141,15 +192,22 @@ export default function TokenForm() {
       setFormData(prev => ({
         ...prev,
         tokenAddress: address,
-        name: isEditMode ? prev.name : (metadata.metadata?.name || metadata.symbol || prev.name),
+        name: isEditMode ? prev.name : (metadata.metadata?.name || metadata.name || prev.name),
         symbol: isEditMode ? prev.symbol : (metadata.symbol || prev.symbol),
-        description: isEditMode ? prev.description : (metadata.description || metadata.metadata?.description || prev.description),
+        description: isEditMode ? prev.description : (metadata.metadata?.description || prev.description),
         decimals: isEditMode ? prev.decimals : (metadata.decimals || prev.decimals),
-        icon: isEditMode ? prev.icon : (metadata.metadata?.image || prev.icon),
+        icon: isEditMode ? prev.icon : (metadata.icon || metadata.metadata?.image || prev.icon),
+        marketCap: isEditMode ? prev.marketCap : (metadata.market_cap ? metadata.market_cap.toString() : prev.marketCap),
+        holder: isEditMode ? prev.holder : (metadata.holder ? metadata.holder.toString() : prev.holder),
+        supply: isEditMode ? prev.supply : (metadata.supply || prev.supply),
+        price: isEditMode ? prev.price : (metadata.price ? metadata.price.toString() : prev.price),
+        volume: isEditMode ? prev.volume : (metadata.volume_24h || prev.volume),
+        priceChange24h: isEditMode ? prev.priceChange24h : (metadata.price_change_24h ? metadata.price_change_24h.toString() : prev.priceChange24h),
+        tokenCreatedAt: isEditMode ? prev.tokenCreatedAt : (metadata.created_time ? new Date(metadata.created_time * 1000).toISOString() : prev.tokenCreatedAt),
         socialUrls: {
           ...prev.socialUrls,
-          web: metadata.website || prev.socialUrls?.web || "",
-          x: metadata.twitter ? `https://twitter.com/${metadata.twitter}` : prev.socialUrls?.x || "",
+          web: isEditMode ? prev.socialUrls?.web : (metadata.metadata?.website || prev.socialUrls?.web || ""),
+          x: isEditMode ? prev.socialUrls?.x : (metadata.metadata?.twitter ? `https://twitter.com/${metadata.metadata.twitter}` : prev.socialUrls?.x || ""),
           telegram: prev.socialUrls?.telegram || "",
           reddit: prev.socialUrls?.reddit || "",
           github: prev.socialUrls?.github || ""
@@ -246,26 +304,57 @@ export default function TokenForm() {
 
     try {
       if (isEditMode) {
-        // Only send the allowed fields for update
+        // Send all fields for update
         const updateData = {
+          name: formData.name,
           description: formData.description,
-          category: formData.category,
-          slippage: formData.slippage,
-          graphType: formData.graphType,
+          decimals: formData.decimals,
           icon: formData.icon,
+          marketCap: formData.marketCap,
+          tokenCreatedAt: formData.tokenCreatedAt,
+          holder: formData.holder,
+          supply: formData.supply,
+          price: formData.price,
+          volume: formData.volume,
+          priceChange24h: formData.priceChange24h,
+          cmcId: formData.cmcId,
+          cgId: formData.cgId,
+          category: formData.category,
+          graphType: formData.graphType,
+          isSpotlight: formData.isSpotlight,
+          isHome: formData.isHome,
+          isActive: formData.isActive,
+          isLive: formData.isLive,
           socialUrls: formData.socialUrls,
+          grapDataInfo: formData.grapDataInfo,
         };
         await axiosInstance.put(`/admin/token/update/${formData._id}`, updateData);
       } else {
-        // For create, only send the required fields
+        // For create, send all available fields
         const createData = {
           tokenAddress: formData.tokenAddress,
+          symbol: formData.symbol,
+          name: formData.name,
           description: formData.description,
-          category: formData.category,
-          graphType: formData.graphType,
+          decimals: formData.decimals,
+          icon: formData.icon,
+          marketCap: formData.marketCap,
+          tokenCreatedAt: formData.tokenCreatedAt,
+          holder: formData.holder,
+          supply: formData.supply,
+          price: formData.price,
+          volume: formData.volume,
+          priceChange24h: formData.priceChange24h,
           cmcId: formData.cmcId,
           cgId: formData.cgId,
-          symbol: formData.symbol
+          category: formData.category,
+          graphType: formData.graphType,
+          isSpotlight: formData.isSpotlight,
+          isHome: formData.isHome,
+          isActive: formData.isActive,
+          isLive: formData.isLive,
+          socialUrls: formData.socialUrls,
+          grapDataInfo: formData.grapDataInfo,
         };
         await axiosInstance.post("/admin/token/create", createData);
       }
@@ -606,6 +695,143 @@ export default function TokenForm() {
                       placeholder="CoinGecko ID"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Decimals
+                    </label>
+                    <input
+                      type="number"
+                      name="decimals"
+                      value={formData.decimals || ""}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., 9"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Icon URL
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="url"
+                        name="icon"
+                        value={formData.icon || ""}
+                        onChange={handleInputChange}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="https://example.com/icon.png"
+                      />
+                      {formData.icon && (
+                        <img 
+                          src={formData.icon} 
+                          alt="Token Icon" 
+                          className="w-12 h-12 rounded-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = '/default-token-icon.png';
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Market Cap (USD)
+                    </label>
+                    <input
+                      type="text"
+                      name="marketCap"
+                      value={formData.marketCap || ""}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., 1000000000"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Holders
+                    </label>
+                    <input
+                      type="text"
+                      name="holder"
+                      value={formData.holder || ""}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., 1000000"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Total Supply
+                    </label>
+                    <input
+                      type="text"
+                      name="supply"
+                      value={formData.supply || ""}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., 1000000000000"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Price (USD)
+                    </label>
+                    <input
+                      type="text"
+                      name="price"
+                      value={formData.price || ""}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., 0.001234"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      24h Volume
+                    </label>
+                    <input
+                      type="number"
+                      name="volume"
+                      value={formData.volume || ""}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., 1000000"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      24h Price Change (%)
+                    </label>
+                    <input
+                      type="text"
+                      name="priceChange24h"
+                      value={formData.priceChange24h || ""}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., 5.67"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Token Created At
+                    </label>
+                    <input
+                      type="datetime-local"
+                      name="tokenCreatedAt"
+                      value={formData.tokenCreatedAt ? new Date(formData.tokenCreatedAt).toISOString().slice(0, 16) : ""}
+                      onChange={(e) => setFormData(prev => ({ ...prev, tokenCreatedAt: e.target.value ? new Date(e.target.value).toISOString() : "" }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
                 </>
               )}
 
@@ -660,21 +886,158 @@ export default function TokenForm() {
                 </select>
               </div>
 
-              {isEditMode && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Slippage (%)
-                  </label>
-                  <input
-                    type="text"
-                    name="slippage"
-                    value={formData.slippage}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter slippage percentage"
-                  />
-                </div>
-              )}
+            </div>
+          </div>
+
+          {/* Status and Settings Card */}
+          <div className="bg-white shadow-md rounded-lg overflow-hidden">
+            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Status and Settings</h2>
+            </div>
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  name="isActive"
+                  checked={formData.isActive || false}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
+                  Active
+                </label>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isLive"
+                  name="isLive"
+                  checked={formData.isLive || false}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isLive: e.target.checked }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isLive" className="ml-2 block text-sm text-gray-900">
+                  Live
+                </label>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isSpotlight"
+                  name="isSpotlight"
+                  checked={formData.isSpotlight || false}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isSpotlight: e.target.checked }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isSpotlight" className="ml-2 block text-sm text-gray-900">
+                  Spotlight
+                </label>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isHome"
+                  name="isHome"
+                  checked={formData.isHome || false}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isHome: e.target.checked }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isHome" className="ml-2 block text-sm text-gray-900">
+                  Show on Home
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Graph Data Information Card */}
+          <div className="bg-white shadow-md rounded-lg overflow-hidden">
+            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Graph Data Information</h2>
+            </div>
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isCronUpdate"
+                  name="isCronUpdate"
+                  checked={formData.grapDataInfo?.isCronUpdate || false}
+                  onChange={(e) => setFormData(prev => ({ 
+                    ...prev, 
+                    grapDataInfo: { 
+                      ...prev.grapDataInfo, 
+                      isCronUpdate: e.target.checked 
+                    } 
+                  }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isCronUpdate" className="ml-2 block text-sm text-gray-900">
+                  Cron Update
+                </label>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isMaxGraphDataAdded"
+                  name="isMaxGraphDataAdded"
+                  checked={formData.grapDataInfo?.isMaxGraphDataAdded || false}
+                  onChange={(e) => setFormData(prev => ({ 
+                    ...prev, 
+                    grapDataInfo: { 
+                      ...prev.grapDataInfo, 
+                      isMaxGraphDataAdded: e.target.checked 
+                    } 
+                  }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isMaxGraphDataAdded" className="ml-2 block text-sm text-gray-900">
+                  Max Graph Data
+                </label>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isOneDayGraphDataAdded"
+                  name="isOneDayGraphDataAdded"
+                  checked={formData.grapDataInfo?.isOneDayGraphDataAdded || false}
+                  onChange={(e) => setFormData(prev => ({ 
+                    ...prev, 
+                    grapDataInfo: { 
+                      ...prev.grapDataInfo, 
+                      isOneDayGraphDataAdded: e.target.checked 
+                    } 
+                  }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isOneDayGraphDataAdded" className="ml-2 block text-sm text-gray-900">
+                  One Day Graph Data
+                </label>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isFourHourGraphDataAdded"
+                  name="isFourHourGraphDataAdded"
+                  checked={formData.grapDataInfo?.isFourHourGraphDataAdded || false}
+                  onChange={(e) => setFormData(prev => ({ 
+                    ...prev, 
+                    grapDataInfo: { 
+                      ...prev.grapDataInfo, 
+                      isFourHourGraphDataAdded: e.target.checked 
+                    } 
+                  }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isFourHourGraphDataAdded" className="ml-2 block text-sm text-gray-900">
+                  Four Hour Graph Data
+                </label>
+              </div>
             </div>
           </div>
 
@@ -708,8 +1071,7 @@ export default function TokenForm() {
           )}
 
           {/* Social Links Card */}
-          {isEditMode && (
-            <div className="bg-white shadow-md rounded-lg overflow-hidden">
+          <div className="bg-white shadow-md rounded-lg overflow-hidden">
               <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">Social Media Links</h2>
               </div>
@@ -751,6 +1113,26 @@ export default function TokenForm() {
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="https://twitter.com/username"
+                  />
+                </div>
+
+                {/* Instagram */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <span className="flex items-center">
+                      <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                      </svg>
+                      Instagram
+                    </span>
+                  </label>
+                  <input
+                    type="url"
+                    name="social.instagram"
+                    value={formData.socialUrls?.instagram || ""}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="https://instagram.com/username"
                   />
                 </div>
 
@@ -815,7 +1197,6 @@ export default function TokenForm() {
                 </div>
               </div>
             </div>
-          )}
 
           {/* Action Buttons */}
           <div className="flex justify-end space-x-4">
