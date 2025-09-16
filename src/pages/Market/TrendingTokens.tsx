@@ -27,11 +27,21 @@ export default function TrendingTokens() {
 
   const fetchTrendingTokens = async () => {
     try {
-      const response = await tokenApi.getTrendingTokens();
-      setTokens(response.data || []);
+      setLoading(true);
+      setError("");
+      const response = await tokenApi.getTrendingTokens(20);
+      console.log("Trending tokens response:", response);
+      
+      if (response.success && response.data) {
+        setTokens(response.data);
+      } else {
+        setError(response.message || "Failed to fetch trending tokens");
+        setTokens([]);
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch trending tokens");
+      setError(err.response?.data?.message || err.message || "Failed to fetch trending tokens");
       console.error("Error fetching trending tokens:", err);
+      setTokens([]);
     } finally {
       setLoading(false);
     }

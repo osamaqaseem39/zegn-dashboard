@@ -102,16 +102,50 @@ export const tokenApi = {
     return response.data;
   },
 
-  // Get trending tokens
-  getTrendingTokens: async () => {
-    const response = await axiosInstance.get('/tokens/trending');
-    return response.data;
+  // Get trending tokens from Solscan
+  getTrendingTokens: async (limit: number = 20) => {
+    try {
+      const { solscanApiService } = await import('./solscanApi');
+      const tokens = await solscanApiService.getTrendingTokens(limit);
+      return {
+        data: tokens,
+        success: true,
+        message: 'Trending tokens fetched successfully'
+      };
+    } catch (error) {
+      console.error('Error in getTrendingTokens:', error);
+      return {
+        data: [],
+        success: false,
+        message: 'Failed to fetch trending tokens'
+      };
+    }
   },
 
-  // Get top tokens
-  getTopTokens: async () => {
-    const response = await axiosInstance.get('/tokens/top');
-    return response.data;
+  // Get top tokens from Solscan
+  getTopTokens: async (limit: number = 20) => {
+    try {
+      const { solscanApiService } = await import('./solscanApi');
+      const tokens = await solscanApiService.getTopTokens(limit);
+      return {
+        data: {
+          items: tokens,
+          total: tokens.length
+        },
+        success: true,
+        message: 'Top tokens fetched successfully'
+      };
+    } catch (error) {
+      console.error('Error in getTopTokens:', error);
+      return {
+        data: {
+          items: [],
+          total: 0
+        },
+        success: false,
+        message: 'Failed to fetch top tokens'
+      };
+    }
   },
 
   // Get token metadata

@@ -31,11 +31,21 @@ export default function TopTokens() {
 
   const fetchTopTokens = async () => {
     try {
-      const response = await tokenApi.getTopTokens();
-      setTokens(response.data.items || []);
+      setLoading(true);
+      setError("");
+      const response = await tokenApi.getTopTokens(20);
+      console.log("Top tokens response:", response);
+      
+      if (response.success && response.data && response.data.items) {
+        setTokens(response.data.items);
+      } else {
+        setError(response.message || "Failed to fetch top tokens");
+        setTokens([]);
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch top tokens");
+      setError(err.response?.data?.message || err.message || "Failed to fetch top tokens");
       console.error("Error fetching top tokens:", err);
+      setTokens([]);
     } finally {
       setLoading(false);
     }
