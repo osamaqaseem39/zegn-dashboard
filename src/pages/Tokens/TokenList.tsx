@@ -9,14 +9,14 @@ interface Token {
   name: string;
   symbol: string;
   description: string;
-  decimals: number;
+  decimals: number | null;
   icon: string;
   tokenAddress: string;
   marketCap: string;
   holder: string;
   supply: string;
   price: string;
-  volume: number;
+  volume: number | null;
   priceChange24h: string;
   isActive: boolean;
   isSpotlight: boolean;
@@ -79,11 +79,17 @@ export default function TokenList() {
   const fetchTokens = async () => {
     try {
       setLoading(true);
+      setError(""); // Clear any previous errors
+      console.log("TokenList: Starting to fetch tokens...");
       const data = await tokenApi.getTokens();
-      setTokens(data);
+      console.log("TokenList: Received tokens data:", data);
+      console.log("TokenList: Number of tokens:", data?.length || 0);
+      setTokens(data || []);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to load tokens");
+      const errorMessage = err.response?.data?.message || "Failed to load tokens";
+      setError(errorMessage);
       console.error("Error fetching tokens:", err);
+      console.error("Error response:", err.response?.data);
     } finally {
       setLoading(false);
     }
@@ -117,7 +123,8 @@ export default function TokenList() {
     return sortConfig.direction === "asc" ? "↑" : "↓";
   };
 
-  const formatNumber = (value: string | number) => {
+  const formatNumber = (value: string | number | null) => {
+    if (value === null || value === undefined) return '0';
     const num = typeof value === 'string' ? parseFloat(value) : value;
     if (isNaN(num)) return '0';
     return new Intl.NumberFormat('en-US', {
@@ -126,16 +133,20 @@ export default function TokenList() {
     }).format(num);
   };
 
-  const formatPrice = (price: string) => {
+  const formatPrice = (price: string | null) => {
+    if (price === null || price === undefined || price === '') return '0.00';
     const num = parseFloat(price);
+    if (isNaN(num)) return '0.00';
     return new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 6
     }).format(num);
   };
 
-  const formatPriceChange = (change: string) => {
+  const formatPriceChange = (change: string | null) => {
+    if (change === null || change === undefined || change === '') return <span className="text-gray-500">0.00%</span>;
     const num = parseFloat(change);
+    if (isNaN(num)) return <span className="text-gray-500">0.00%</span>;
     const isPositive = num > 0;
     return (
       <span className={`${isPositive ? 'text-green-600' : 'text-red-600'}`}>
@@ -395,10 +406,16 @@ export default function TokenList() {
                     currentTokens.map((token) => (
                       <tr key={token._id}>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <img src={token.icon} alt={token.symbol} className="w-8 h-8 rounded-full" />
+                          {token.icon ? (
+                            <img src={token.icon} alt={token.symbol} className="w-8 h-8 rounded-full" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium">
+                              {token.symbol?.charAt(0) || '?'}
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium">{token.name}</div>
+                          <div className="font-medium">{token.name || 'Unnamed Token'}</div>
                           <div className="text-sm text-gray-500">{token.symbol}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
