@@ -88,9 +88,7 @@ export interface TokenFilters {
 export const tokenApi = {
   // Get all tokens (admin endpoint)
   getTokens: async (): Promise<Token[]> => {
-    console.log('TokenApi: Fetching tokens from /admin/token');
     const response = await axiosInstance.get('/admin/token');
-    console.log('TokenApi: Response received:', response.data);
     // Backend returns { status: {...}, body: { tokens: { tokens: Token[] } } }
     return response.data.body?.tokens?.tokens ?? response.data.tokens ?? response.data;
   },
@@ -181,9 +179,7 @@ export const tokenApi = {
 
   // Get token by address (admin)
   getByAddress: async (address: string): Promise<Token> => {
-    console.log('TokenApi: Fetching token by address:', address);
     const response = await axiosInstance.get(`/admin/token/${address}`);
-    console.log('TokenApi: Response received:', response.data);
     // Backend returns { status: {...}, body: { token: Token } }
     return response.data.body?.token ?? response.data.token ?? response.data;
   },

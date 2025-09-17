@@ -60,7 +60,7 @@ export default function TokenList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: "", direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('inactive');
+  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
   const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean; tokenId: string; tokenName: string}>({
     show: false,
     tokenId: "",
@@ -88,15 +88,7 @@ export default function TokenList() {
     try {
       setLoading(true);
       setError(""); // Clear any previous errors
-      console.log("TokenList: Starting to fetch tokens...");
-      console.log("TokenList: API Base URL:", import.meta.env.VITE_API_BASE_URL);
-      console.log("TokenList: Full URL will be:", `${import.meta.env.VITE_API_BASE_URL || 'https://degn.vercel.app/api/v1'}/admin/token`);
-      
       const data = await tokenApi.getTokens();
-      console.log("TokenList: Received tokens data:", data);
-      console.log("TokenList: Data type:", typeof data);
-      console.log("TokenList: Is array:", Array.isArray(data));
-      console.log("TokenList: Number of tokens:", data?.length || 0);
       
       if (Array.isArray(data)) {
         setTokens(data);
@@ -107,9 +99,6 @@ export default function TokenList() {
       }
     } catch (err: any) {
       console.error("Error fetching tokens:", err);
-      console.error("Error response:", err.response?.data);
-      console.error("Error status:", err.response?.status);
-      console.error("Error headers:", err.response?.headers);
       
       // Use the error handler to get a standardized error
       const appError = ErrorHandler.handleApiError(err);
@@ -196,13 +185,6 @@ export default function TokenList() {
     activeTab === 'active' ? token.isActive : !token.isActive
   );
 
-  // Debug logging
-  console.log('TokenList Debug:', {
-    totalTokens: tokens.length,
-    activeTab,
-    statusFilteredTokens: statusFilteredTokens.length,
-    tokens: tokens.map(t => ({ name: t.name, symbol: t.symbol, isActive: t.isActive }))
-  });
 
   // Sort the data
   const sortedTokens = [...statusFilteredTokens].sort((a, b) => {
@@ -414,16 +396,6 @@ export default function TokenList() {
           </div>
         )}
 
-        {/* Debug information */}
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 text-blue-600 rounded-md">
-          <p>Debug Info:</p>
-          <p>Total tokens: {tokens.length}</p>
-          <p>Active tab: {activeTab}</p>
-          <p>Filtered tokens: {statusFilteredTokens.length}</p>
-          <p>Current tokens: {currentTokens.length}</p>
-          <p>Loading: {loading.toString()}</p>
-          <p>Error: {error || 'None'}</p>
-        </div>
 
         {loading ? (
           <div className="text-center py-4">Loading...</div>

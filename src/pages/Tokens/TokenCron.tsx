@@ -34,9 +34,7 @@ export default function TokenCron() {
   const fetchTokenDetails = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('TokenCron: Fetching token details for address:', tokenAddress);
       const tokenData = await tokenApi.getByAddress(tokenAddress as string);
-      console.log('TokenCron: Received token data:', tokenData);
       
       // Map the token data to include default cron data if not present
       const tokenCronData: TokenCronData = {
@@ -49,11 +47,9 @@ export default function TokenCron() {
           isFourHourGraphDataAdded: false,
         }
       };
-      console.log('TokenCron: Mapped token data:', tokenCronData);
       setToken(tokenCronData);
     } catch (err: any) {
       console.error('TokenCron: Error fetching token details:', err);
-      console.error('TokenCron: Error response:', err.response?.data);
       // Set a default token structure on error
       setToken({
         _id: '',
@@ -106,15 +102,12 @@ export default function TokenCron() {
     setErrorMessage("");
     setSuccessMessage("");
     try {
-      console.log('TokenCron: Activating graph cron for token ID:', token._id);
       const response = await tokenApi.activateGraphCron(token._id);
-      console.log('TokenCron: Activate graph response:', response);
       setSuccessMessage("Graph cron activated successfully!");
       clearMessages();
       await fetchTokenDetails();
     } catch (err: any) {
       console.error('TokenCron: Error activating graph:', err);
-      console.error('TokenCron: Error response:', err.response?.data);
       setErrorMessage(err.response?.data?.message || "Failed to activate graph cron");
     } finally {
       setButtonLoading(prev => ({ ...prev, activate: false }));
@@ -127,15 +120,12 @@ export default function TokenCron() {
     setErrorMessage("");
     setSuccessMessage("");
     try {
-      console.log('TokenCron: Fetching latest graph data for token ID:', token._id);
       const response = await tokenApi.fetchLatestGraphData(token._id);
-      console.log('TokenCron: Fetch latest graph data response:', response);
       setSuccessMessage("Latest graph data fetched successfully!");
       clearMessages();
       await fetchTokenDetails();
     } catch (err: any) {
       console.error('TokenCron: Error fetching latest graph data:', err);
-      console.error('TokenCron: Error response:', err.response?.data);
       setErrorMessage(err.response?.data?.message || "Failed to update latest graph data");
     } finally {
       setButtonLoading(prev => ({ ...prev, latest: false }));
@@ -149,9 +139,7 @@ export default function TokenCron() {
     setErrorMessage("");
     setSuccessMessage("");
     try {
-      console.log('TokenCron: Deleting graph data for token ID:', token._id);
       const response = await tokenApi.deleteGraphData(token._id);
-      console.log('TokenCron: Delete graph data response:', response);
       setSuccessMessage("Graph data deleted successfully!");
       clearMessages();
       await fetchTokenDetails();
@@ -159,7 +147,6 @@ export default function TokenCron() {
       setDeleteInput("");
     } catch (err: any) {
       console.error('TokenCron: Error deleting graph data:', err);
-      console.error('TokenCron: Error response:', err.response?.data);
       setErrorMessage(err.response?.data?.message || "Failed to delete graph data");
     } finally {
       setButtonLoading(prev => ({ ...prev, delete: false }));
