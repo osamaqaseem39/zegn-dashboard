@@ -20,25 +20,70 @@ export default function TokenCron() {
   const [buttonLoading, setButtonLoading] = useState<Record<string, boolean>>({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteInput, setDeleteInput] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // Clear messages after timeout
+  const clearMessages = () => {
+    setTimeout(() => {
+      setSuccessMessage("");
+      setErrorMessage("");
+    }, 5000);
+  };
 
   const fetchTokenDetails = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('TokenCron: Fetching token details for address:', tokenAddress);
       const tokenData = await tokenApi.getByAddress(tokenAddress as string);
+      console.log('TokenCron: Received token data:', tokenData);
+      
       // Map the token data to include default cron data if not present
       const tokenCronData: TokenCronData = {
         ...tokenData,
-        graphType: 'default',
-        grapDataInfo: {
+        graphType: (tokenData as any).graphType || 'cmc',
+        grapDataInfo: (tokenData as any).grapDataInfo || {
           isCronUpdate: false,
           isMaxGraphDataAdded: false,
           isOneDayGraphDataAdded: false,
           isFourHourGraphDataAdded: false,
         }
       };
+      console.log('TokenCron: Mapped token data:', tokenCronData);
       setToken(tokenCronData);
     } catch (err: any) {
-      console.error(err.response?.data?.message || "Failed to fetch token details");
+      console.error('TokenCron: Error fetching token details:', err);
+      console.error('TokenCron: Error response:', err.response?.data);
+      // Set a default token structure on error
+      setToken({
+        _id: '',
+        tokenAddress: tokenAddress || '',
+        symbol: 'Unknown',
+        name: 'Unknown Token',
+        description: '',
+        decimals: 0,
+        icon: '',
+        marketCap: '',
+        holder: '',
+        supply: '',
+        price: '',
+        volume: 0,
+        priceChange24h: '',
+        isActive: false,
+        isSpotlight: false,
+        isHome: false,
+        category: '',
+        createdAt: '',
+        updatedAt: '',
+        isLive: false,
+        graphType: 'cmc',
+        grapDataInfo: {
+          isCronUpdate: false,
+          isMaxGraphDataAdded: false,
+          isOneDayGraphDataAdded: false,
+          isFourHourGraphDataAdded: false,
+        }
+      });
     } finally {
       setLoading(false);
     }
@@ -58,11 +103,19 @@ export default function TokenCron() {
   const handleActivateGraph = async () => {
     if (!token) return;
     setButtonLoading(prev => ({ ...prev, activate: true }));
+    setErrorMessage("");
+    setSuccessMessage("");
     try {
-      await tokenApi.activateGraphCron(token._id);
+      console.log('TokenCron: Activating graph cron for token ID:', token._id);
+      const response = await tokenApi.activateGraphCron(token._id);
+      console.log('TokenCron: Activate graph response:', response);
+      setSuccessMessage("Graph cron activated successfully!");
+      clearMessages();
       await fetchTokenDetails();
     } catch (err: any) {
-      console.error(err.response?.data?.message || "Failed to activate graph");
+      console.error('TokenCron: Error activating graph:', err);
+      console.error('TokenCron: Error response:', err.response?.data);
+      setErrorMessage(err.response?.data?.message || "Failed to activate graph cron");
     } finally {
       setButtonLoading(prev => ({ ...prev, activate: false }));
     }
@@ -71,11 +124,19 @@ export default function TokenCron() {
   const handleLatestGraphData = async () => {
     if (!token) return;
     setButtonLoading(prev => ({ ...prev, latest: true }));
+    setErrorMessage("");
+    setSuccessMessage("");
     try {
-      await tokenApi.fetchLatestGraphData(token._id);
+      console.log('TokenCron: Fetching latest graph data for token ID:', token._id);
+      const response = await tokenApi.fetchLatestGraphData(token._id);
+      console.log('TokenCron: Fetch latest graph data response:', response);
+      setSuccessMessage("Latest graph data fetched successfully!");
+      clearMessages();
       await fetchTokenDetails();
     } catch (err: any) {
-      console.error(err.response?.data?.message || "Failed to update latest graph data");
+      console.error('TokenCron: Error fetching latest graph data:', err);
+      console.error('TokenCron: Error response:', err.response?.data);
+      setErrorMessage(err.response?.data?.message || "Failed to update latest graph data");
     } finally {
       setButtonLoading(prev => ({ ...prev, latest: false }));
     }
@@ -85,13 +146,21 @@ export default function TokenCron() {
     if (!token || deleteInput !== "Delete Cron Data") return;
 
     setButtonLoading(prev => ({ ...prev, delete: true }));
+    setErrorMessage("");
+    setSuccessMessage("");
     try {
-      await tokenApi.deleteGraphData(token._id);
+      console.log('TokenCron: Deleting graph data for token ID:', token._id);
+      const response = await tokenApi.deleteGraphData(token._id);
+      console.log('TokenCron: Delete graph data response:', response);
+      setSuccessMessage("Graph data deleted successfully!");
+      clearMessages();
       await fetchTokenDetails();
       setShowDeleteModal(false);
       setDeleteInput("");
     } catch (err: any) {
-      console.error(err.response?.data?.message || "Failed to delete data");
+      console.error('TokenCron: Error deleting graph data:', err);
+      console.error('TokenCron: Error response:', err.response?.data);
+      setErrorMessage(err.response?.data?.message || "Failed to delete graph data");
     } finally {
       setButtonLoading(prev => ({ ...prev, delete: false }));
     }
@@ -116,6 +185,30 @@ export default function TokenCron() {
             ← Back to Tokens
           </Link>
         </div>
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4">
+            <div className="flex items-center">
+              <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <p className="text-sm text-green-700">{successMessage}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4">
+            <div className="flex items-center">
+              <svg className="h-5 w-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-red-700">{errorMessage}</p>
+            </div>
+          </div>
+        )}
 
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           <div className="p-6 border-b border-gray-200">

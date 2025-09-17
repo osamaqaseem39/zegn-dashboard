@@ -181,8 +181,11 @@ export const tokenApi = {
 
   // Get token by address (admin)
   getByAddress: async (address: string): Promise<Token> => {
+    console.log('TokenApi: Fetching token by address:', address);
     const response = await axiosInstance.get(`/admin/token/${address}`);
-    return response.data;
+    console.log('TokenApi: Response received:', response.data);
+    // Backend returns { status: {...}, body: { token: Token } }
+    return response.data.body?.token ?? response.data.token ?? response.data;
   },
 
   // Toggle token active status by address
