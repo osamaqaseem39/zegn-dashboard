@@ -32,6 +32,7 @@ export interface TokenDetail {
   cmcId?: string;
   cgId?: string;
   category?: string;
+  slippage?: string;
   graphType?: string;
   isSpotlight?: boolean;
   isHome?: boolean;
