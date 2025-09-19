@@ -85,6 +85,16 @@ export interface TokenFilters {
   offset?: number;
 }
 
+export interface GraphDataPoint {
+  price: string;
+  priceChange24h: string;
+  timestamp: string;
+}
+
+export interface GraphDataResponse {
+  data: GraphDataPoint[];
+}
+
 export const tokenApi = {
   // Get all tokens (admin endpoint)
   getTokens: async (): Promise<Token[]> => {
@@ -223,6 +233,41 @@ export const tokenApi = {
   // Delete token graph data by ID
   deleteGraphData: async (id: string): Promise<{ message: string }> => {
     const response = await axiosInstance.delete(`/admin/token/graph/${id}`);
+    return response.data;
+  },
+
+  // Get token graph data
+  getTokenGraphData: async (tokenId: string, type: 'max' | '1d' | '4h' = 'max'): Promise<GraphDataResponse> => {
+    const response = await axiosInstance.get(`/api/v1/token/graph/${tokenId}?type=${type}`);
+    return response.data;
+  },
+
+  // Populate historical graph data
+  populateGraphData: async (tokenId: string, days: number = 7): Promise<{ message: string }> => {
+    const response = await axiosInstance.post(`/api/v1/admin/graph/populate/${tokenId}?days=${days}`);
+    return response.data;
+  },
+
+  // Get graph data statistics
+  getGraphStats: async (): Promise<{
+    totalTokens: number;
+    tokensWithGraphData: number;
+    lastUpdated: string;
+    cronEnabledTokens: number;
+  }> => {
+    const response = await axiosInstance.get('/api/v1/admin/graph/stats');
+    return response.data;
+  },
+
+  // Enable automatic graph updates (cron)
+  enableGraphCron: async (tokenId: string): Promise<{ message: string }> => {
+    const response = await axiosInstance.post(`/api/v1/admin/graph/enable-cron/${tokenId}`);
+    return response.data;
+  },
+
+  // Get token by ID (for public API)
+  getTokenById: async (id: string): Promise<Token> => {
+    const response = await axiosInstance.get(`/api/v1/token/${id}`);
     return response.data;
   },
 

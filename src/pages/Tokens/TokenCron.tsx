@@ -22,6 +22,12 @@ export default function TokenCron() {
   const [deleteInput, setDeleteInput] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [graphStats, setGraphStats] = useState<{
+    totalTokens: number;
+    tokensWithGraphData: number;
+    lastUpdated: string;
+    cronEnabledTokens: number;
+  } | null>(null);
 
   // Clear messages after timeout
   const clearMessages = () => {
@@ -85,11 +91,21 @@ export default function TokenCron() {
     }
   }, [tokenAddress]);
 
+  const fetchGraphStats = useCallback(async () => {
+    try {
+      const stats = await tokenApi.getGraphStats();
+      setGraphStats(stats);
+    } catch (err: any) {
+      console.error('TokenCron: Error fetching graph stats:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (tokenAddress) {
       fetchTokenDetails();
+      fetchGraphStats();
     }
-  }, [tokenAddress, fetchTokenDetails]);
+  }, [tokenAddress, fetchTokenDetails, fetchGraphStats]);
 
   const handleDeleteData = () => {
     if (!token) return;
@@ -102,7 +118,7 @@ export default function TokenCron() {
     setErrorMessage("");
     setSuccessMessage("");
     try {
-      const response = await tokenApi.activateGraphCron(token._id);
+      const response = await tokenApi.enableGraphCron(token._id);
       setSuccessMessage("Graph cron activated successfully!");
       clearMessages();
       await fetchTokenDetails();
@@ -120,13 +136,13 @@ export default function TokenCron() {
     setErrorMessage("");
     setSuccessMessage("");
     try {
-      const response = await tokenApi.fetchLatestGraphData(token._id);
-      setSuccessMessage("Latest graph data fetched successfully!");
+      const response = await tokenApi.populateGraphData(token._id, 7);
+      setSuccessMessage("Historical graph data populated successfully!");
       clearMessages();
       await fetchTokenDetails();
     } catch (err: any) {
-      console.error('TokenCron: Error fetching latest graph data:', err);
-      setErrorMessage(err.response?.data?.message || "Failed to update latest graph data");
+      console.error('TokenCron: Error populating graph data:', err);
+      setErrorMessage(err.response?.data?.message || "Failed to populate graph data");
     } finally {
       setButtonLoading(prev => ({ ...prev, latest: false }));
     }
@@ -256,6 +272,37 @@ export default function TokenCron() {
           </div>
         </div>
 
+        {/* Graph Statistics */}
+        {graphStats && (
+          <div className="bg-white shadow-lg rounded-lg overflow-hidden mt-6">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold">Graph Data Statistics</h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{graphStats.totalTokens}</div>
+                  <div className="text-sm text-gray-500">Total Tokens</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{graphStats.tokensWithGraphData}</div>
+                  <div className="text-sm text-gray-500">With Graph Data</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">{graphStats.cronEnabledTokens}</div>
+                  <div className="text-sm text-gray-500">Cron Enabled</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-sm font-medium text-gray-900">
+                    {new Date(graphStats.lastUpdated).toLocaleDateString()}
+                  </div>
+                  <div className="text-sm text-gray-500">Last Updated</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white shadow-lg rounded-lg overflow-hidden mt-6">
           <div className="p-6">
             <h2 className="text-xl font-semibold mb-4">Manual Graph Updates</h2>
@@ -336,9 +383,9 @@ export default function TokenCron() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      Updating Latest Graph Data...
+                      Populating Historical Data...
                     </span>
-                  ) : "Latest Graph Data"}
+                  ) : "Populate Historical Data"}
                 </span>
                 {token?.grapDataInfo?.isFourHourGraphDataAdded && (
                   <span className="text-green-500">✓</span>

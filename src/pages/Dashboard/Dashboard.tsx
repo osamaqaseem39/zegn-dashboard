@@ -10,6 +10,8 @@ import { authApi, UserProfile } from '../../api/authApi';
 import { transactionApi, Transaction, QuoteResponse } from '../../api/transactionApi';
 import { tokenApi, Token, TokenPricesResponse } from '../../api/tokenApi';
 import { referralApi, ReferralStats, ReferralEarnings } from '../../api/referralApi';
+import TokenDashboard from '../../components/tokens/TokenDashboard';
+import CoinGeckoDemo from '../../components/tokens/CoinGeckoDemo';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -229,6 +231,22 @@ const Dashboard: React.FC = () => {
             <p className="text-xs text-muted-foreground">From referrals</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Token Dashboard */}
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Token Overview</h2>
+          <TokenDashboard limit={6} showCharts={true} />
+        </div>
+      </div>
+
+      {/* CoinGecko Integration Demo */}
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold mb-4">🚀 CoinGecko Integration Demo</h2>
+          <CoinGeckoDemo />
+        </div>
       </div>
 
       {/* Main Content */}

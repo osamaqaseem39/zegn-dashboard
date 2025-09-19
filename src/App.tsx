@@ -25,6 +25,7 @@ const TokenCron = lazy(() => import("./pages/Tokens/TokenCron"));
 const TokenManagementForm = lazy(() => import("./pages/Tokens/TokenManagementForm"));
 const TrendingTokens = lazy(() => import("./pages/Market/TrendingTokens"));
 const TopTokens = lazy(() => import("./pages/Market/TopTokens"));
+const TokenMarket = lazy(() => import("./pages/Market/TokenMarket"));
 const TransactionHistoryForm = lazy(() => import("./pages/Transactions/TransactionHistoryForm"));
 
 // Loading component
@@ -75,6 +76,7 @@ export default function App() {
               <Route path="/transactions/history" element={<TransactionHistoryForm />} />
               
               {/* Market Analysis */}
+              <Route path="/market" element={<TokenMarket />} />
               <Route path="/market/trending-tokens" element={<TrendingTokens />} />
               <Route path="/market/top-tokens" element={<TopTokens />} />
             </Route>

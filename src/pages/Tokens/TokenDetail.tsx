@@ -3,6 +3,9 @@ import { useParams, Link } from "react-router-dom";
 import axiosInstance from "../../api/axiosConfig";
 import { tokenApi } from "../../api/tokenApi";
 import TokenMetadataCard from "../../components/tokens/TokenMetadataCard";
+import TokenChart from "../../components/tokens/TokenChart";
+import TokenPrice from "../../components/tokens/TokenPrice";
+import GraphManagement from "../../components/tokens/GraphManagement";
 
 interface TokenDetail {
   _id: string;
@@ -253,6 +256,24 @@ export default function TokenDetail() {
           )}
         </div>
 
+        {/* Price and Chart Section */}
+        <div className="p-6 border-b border-gray-200">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Price Card */}
+            <div className="lg:col-span-1">
+              <TokenPrice tokenId={token._id} />
+            </div>
+            
+            {/* Chart Card */}
+            <div className="lg:col-span-2">
+              <TokenChart 
+                tokenId={token._id} 
+                tokenSymbol={token.symbol}
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Token Details Section */}
         <div className="p-6 space-y-6">
           <div>
@@ -379,6 +400,15 @@ export default function TokenDetail() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Graph Management */}
+        <div className="mt-8">
+          <GraphManagement 
+            tokenId={token._id}
+            tokenSymbol={token.symbol}
+            onUpdate={fetchTokenDetails}
+          />
         </div>
 
         {/* Enhanced Metadata Card */}
