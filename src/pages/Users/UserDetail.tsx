@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { userApi, UserBalanceResponse, UserSummary } from "../../api/userApi";
+import { authApi, UserProfile } from "../../api/authApi";
 
 interface WalletInfo {
   turnKeyWalletId: string;
@@ -73,12 +74,32 @@ export default function UserDetail() {
   const fetchUserDetail = useCallback(async () => {
     setLoading(true);
     try {
-      const me = await userApi.getMe();
-      setUser(me as User);
+      if (!userId) throw new Error('Missing userId');
+      const data = await authApi.getUserById(userId);
+      // data may be inside body or be the user directly
+      const u: any = (data as any)?.user || (data as any)?.body?.user || data;
+      const mapped: User = {
+        _id: u._id || u.id,
+        email: u.email,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        createdAt: u.createdAt,
+        updatedAt: u.updatedAt,
+        userName: u.userName,
+        role: u.role,
+        referralCode: u.referralCode,
+        exportVerificationInfo: u.exportVerificationInfo,
+        walletInfo: u.walletInfo,
+        isEnableNotification: u.isEnableNotification,
+        isActive: u.isActive,
+        profileUrl: u.profileUrl,
+        verificationInfo: u.verificationInfo,
+      };
+      setUser(mapped);
       setError("");
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to fetch user details");
-      console.error("Error fetching user details:", err);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -92,7 +113,6 @@ export default function UserDetail() {
       setBalance(response as any);
     } catch (err: any) {
       setBalanceError(err.response?.data?.message || "Failed to fetch balance");
-      console.error("Error fetching balance:", err);
       setBalance(null);
     } finally {
       setBalanceLoading(false);

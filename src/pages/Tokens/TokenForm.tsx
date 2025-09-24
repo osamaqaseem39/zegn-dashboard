@@ -46,6 +46,7 @@ interface TokenFormData {
   isLive?: boolean;
   socialUrls?: SocialUrls;
   grapDataInfo?: GraphDataInfo;
+  slippage?: string;
 }
 
 interface Category {
@@ -98,6 +99,7 @@ export default function TokenForm() {
       isOneDayGraphDataAdded: false,
       isFourHourGraphDataAdded: false,
     },
+    slippage: "",
   });
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -157,6 +159,7 @@ export default function TokenForm() {
           isOneDayGraphDataAdded: false,
           isFourHourGraphDataAdded: false,
         },
+        slippage: token.slippage || "",
       });
     } catch (err: any) {
       console.error("Error fetching token details:", err);
@@ -327,10 +330,11 @@ export default function TokenForm() {
           isLive: formData.isLive,
           socialUrls: formData.socialUrls,
           grapDataInfo: formData.grapDataInfo,
+          slippage: formData.slippage,
         };
         await axiosInstance.put(`/admin/token/update/${formData._id}`, updateData);
       } else {
-        // For create, send all available fields
+        // For create, send all available fields (no slippage in create DTO)
         const createData = {
           tokenAddress: formData.tokenAddress,
           symbol: formData.symbol,
@@ -356,7 +360,7 @@ export default function TokenForm() {
           socialUrls: formData.socialUrls,
           grapDataInfo: formData.grapDataInfo,
         };
-        await axiosInstance.post("/admin/token/create", createData);
+        await axiosInstance.post(`/admin/token/create`, createData);
       }
       
       navigate("/tokens");
@@ -885,6 +889,22 @@ export default function TokenForm() {
                   <option value="cg">CoinGecko</option>
                 </select>
               </div>
+
+              {isEditMode && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Slippage (%)
+                  </label>
+                  <input
+                    type="text"
+                    name="slippage"
+                    value={formData.slippage || ""}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., 0.5"
+                  />
+                </div>
+              )}
 
 
             </div>

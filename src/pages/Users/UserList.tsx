@@ -5,6 +5,7 @@ import Input from "../../components/form/input/InputField";
 import BalanceModal from "../../components/modals/BalanceModal";
 import { Button } from "../../components/ui/button";
 import { Shield, UserPlus } from "lucide-react";
+import { authApi } from "../../api/authApi";
 
 interface User {
   _id: string;
@@ -44,32 +45,8 @@ interface BalanceResponse {
 }
 
 export default function UserList() {
-  // Dummy user data
-  const dummyUsers: User[] = [
-    { _id: '1', email: 'alice@gmail.com', role: 'admin', isActive: true },
-    { _id: '2', email: 'bob@yahoo.com', role: 'user', isActive: false },
-    { _id: '3', email: 'carol@outlook.com', role: 'user', isActive: true },
-    { _id: '4', email: 'dave@hotmail.com', role: 'user', isActive: true },
-    { _id: '5', email: 'eve@gmail.com', role: 'admin', isActive: false },
-    { _id: '6', email: 'frank@icloud.com', role: 'user', isActive: true },
-    { _id: '7', email: 'grace@protonmail.com', role: 'user', isActive: true },
-    { _id: '8', email: 'heidi@yahoo.com', role: 'user', isActive: false },
-    { _id: '9', email: 'ivan@gmail.com', role: 'user', isActive: true },
-    { _id: '10', email: 'judy@outlook.com', role: 'admin', isActive: true },
-    { _id: '11', email: 'karl@gmail.com', role: 'user', isActive: false },
-    { _id: '12', email: 'laura@yahoo.com', role: 'user', isActive: true },
-    { _id: '13', email: 'mallory@protonmail.com', role: 'user', isActive: true },
-    { _id: '14', email: 'nancy@icloud.com', role: 'user', isActive: false },
-    { _id: '15', email: 'oliver@gmail.com', role: 'admin', isActive: true },
-    { _id: '16', email: 'peggy@hotmail.com', role: 'user', isActive: true },
-    { _id: '17', email: 'quinn@yahoo.com', role: 'user', isActive: false },
-    { _id: '18', email: 'ruth@outlook.com', role: 'user', isActive: true },
-    { _id: '19', email: 'sybil@gmail.com', role: 'user', isActive: true },
-    { _id: '20', email: 'trent@protonmail.com', role: 'user', isActive: false },
-  ];
-
-  // Remove axios/fetch logic and use dummy data
-  const [users, setUsers] = useState<User[]>(dummyUsers);
+  // Use real API data
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -81,8 +58,30 @@ export default function UserList() {
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [balanceError, setBalanceError] = useState("");
 
-  // Remove useEffect(() => { fetchUsers(); }, []);
-  // Remove fetchUsers function
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const data = await authApi.getUsers({ limit: 1000, offset: 0 });
+        // data can be { body: { users, total } } or { users, total }
+        const extracted = (data as any)?.users || (data as any)?.body?.users || [];
+        const normalized: User[] = extracted.map((u: any) => ({
+          _id: u._id || u.id,
+          email: u.email,
+          role: u.role || 'user',
+          isActive: typeof u.isActive === 'boolean' ? u.isActive : true,
+        }));
+        setUsers(normalized);
+      } catch (err: any) {
+        setError(err.response?.data?.message || "Failed to load users");
+        setUsers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const handleSort = (key: keyof User) => {
     setSortConfig((current) => ({
@@ -147,7 +146,6 @@ export default function UserList() {
     setShowBalanceModal(true);
     setBalanceLoading(true);
     setBalanceError("");
-    
     try {
       const response = await axiosInstance.get<BalanceResponse>(`/admin/user/balance/${userId}`);
       setBalance(response.data.body.balance);
