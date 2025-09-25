@@ -232,6 +232,7 @@ export default function TokenForm() {
   useEffect(() => {
     fetchCategories();
     const address = tokenAddress || searchParams.get('address');
+    
     if (address) {
       fetchTokenMetadata(address);
       if (isEditMode) {

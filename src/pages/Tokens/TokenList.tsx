@@ -585,7 +585,7 @@ export default function TokenList() {
                             View
                           </Link>
                           <Link 
-                            to={`/tokens/edit/${token._id}`}
+                            to={`/tokens/edit/${token.tokenAddress}`}
                             className="text-indigo-600 hover:text-indigo-900 mr-3"
                           >
                             Edit

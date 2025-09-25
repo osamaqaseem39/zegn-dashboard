@@ -159,7 +159,7 @@ export default function TokenDetail() {
           ← Back to Tokens
         </Link>
         <Link 
-          to={`/tokens/edit/${token._id}`}
+          to={`/tokens/edit/${token.tokenAddress}`}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
         >
           Edit Token
