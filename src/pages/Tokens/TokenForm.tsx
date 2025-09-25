@@ -268,7 +268,7 @@ export default function TokenForm() {
           name: metadata.name || prev.name,
           symbol: metadata.symbol || prev.symbol,
           decimals: metadata.decimals || prev.decimals,
-          icon: metadata.image || prev.icon,
+          icon: metadata.icon || prev.icon,
         }));
       }
     } catch (err: any) {

@@ -23,7 +23,7 @@ export default function TopTokens() {
     try {
       setLoading(true);
       setError("");
-      const response = await tokenApi.getTopTokens(20);
+      const response = await tokenApi.getTopTokens();
       console.log("Top tokens response:", response);
       
       if (response.success && response.data && response.data.items) {

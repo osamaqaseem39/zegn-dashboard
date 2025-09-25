@@ -93,7 +93,6 @@ const TokenChart: React.FC<TokenChartProps> = ({
       },
       animations: {
         enabled: true,
-        easing: 'easeinout',
         speed: 800,
       },
     },

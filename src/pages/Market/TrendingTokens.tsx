@@ -23,7 +23,7 @@ export default function TrendingTokens() {
     try {
       setLoading(true);
       setError("");
-      const response = await tokenApi.getTrendingTokens(20);
+      const response = await tokenApi.getTrendingTokens();
       console.log("Trending tokens response:", response);
       
       if (response.success && response.data) {
