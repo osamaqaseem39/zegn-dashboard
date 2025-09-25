@@ -122,6 +122,7 @@ export default function TokenForm() {
       console.log('🔑 Auth token in sessionStorage:', sessionStorage.getItem('token') ? 'EXISTS' : 'MISSING');
       setLoading(true);
       
+      
       const response = await axiosInstance.get(`/admin/token/${address}`);
       console.log('📡 fetchTokenDetails - Response received:');
       console.log('  - Status:', response.status);
