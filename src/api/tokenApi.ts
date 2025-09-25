@@ -227,7 +227,7 @@ export const tokenApi = {
   // Get token graph data
   getTokenGraphData: async (tokenId: string, type: 'max' | '1d' | '4h' = 'max'): Promise<GraphDataResponse> => {
     return withRetry(async () => {
-      const response = await axiosInstance.get(`/api/v1/token/graph/${tokenId}?type=${type}`);
+      const response = await axiosInstance.get(`/token/graph/${tokenId}?type=${type}`);
       return response.data;
     });
   },
@@ -235,7 +235,7 @@ export const tokenApi = {
   // Populate historical graph data
   populateGraphData: async (tokenId: string, days: number = 7): Promise<{ message: string }> => {
     return withRetry(async () => {
-      const response = await axiosInstance.post(`/api/v1/admin/graph/populate/${tokenId}?days=${days}`);
+      const response = await axiosInstance.post(`/admin/graph/populate/${tokenId}?days=${days}`);
       return response.data;
     });
   },
@@ -248,7 +248,7 @@ export const tokenApi = {
     cronEnabledTokens: number;
   }> => {
     return withRetry(async () => {
-      const response = await axiosInstance.get('/api/v1/admin/graph/stats');
+      const response = await axiosInstance.get('/admin/graph/stats');
       return response.data;
     });
   },
@@ -256,14 +256,14 @@ export const tokenApi = {
   // Enable automatic graph updates (cron)
   enableGraphCron: async (tokenId: string): Promise<{ message: string }> => {
     return withRetry(async () => {
-      const response = await axiosInstance.post(`/api/v1/admin/graph/enable-cron/${tokenId}`);
+      const response = await axiosInstance.post(`/admin/graph/enable-cron/${tokenId}`);
       return response.data;
     });
   },
 
   // Get token by ID (for public API)
   getTokenById: async (id: string): Promise<Token> => {
-    const response = await axiosInstance.get(`/api/v1/token/${id}`);
+      const response = await axiosInstance.get(`/token/${id}`);
     return response.data;
   },
 
