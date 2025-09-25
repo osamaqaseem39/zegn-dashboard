@@ -580,300 +580,276 @@ export default function TokenForm() {
             </div>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               {!isEditMode && (
-                <>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Token Address *
-                      <span className="ml-1 text-xs text-gray-500">(Auto-fills other fields from Solscan)</span>
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        name="tokenAddress"
-                        value={formData.tokenAddress}
-                        onChange={handleInputChange}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        required
-                        placeholder="Enter Solana token address"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => formData.tokenAddress && fetchTokenMetadata(formData.tokenAddress)}
-                        disabled={!formData.tokenAddress || metadataLoading}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                      >
-                        {metadataLoading ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            Loading...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                            Fetch Data
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    {metadataError && (
-                      <p className="mt-1 text-sm text-red-600">{metadataError}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Name
-                    </label>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Token Address *
+                    <span className="ml-1 text-xs text-gray-500">(Auto-fills other fields from Solscan)</span>
+                  </label>
+                  <div className="flex gap-2">
                     <input
                       type="text"
-                      name="name"
-                      value={formData.name}
+                      name="tokenAddress"
+                      value={formData.tokenAddress}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter token name"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       required
+                      placeholder="Enter Solana token address"
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Symbol *
-                    </label>
-                    <input
-                      type="text"
-                      name="symbol"
-                      value={formData.symbol}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                      placeholder="e.g., BTC"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Category *
-                    </label>
-                    <select
-                      name="category"
-                      value={formData.category}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
+                    <button
+                      type="button"
+                      onClick={() => formData.tokenAddress && fetchTokenMetadata(formData.tokenAddress)}
+                      disabled={!formData.tokenAddress || metadataLoading}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                      <option value="">Select Category</option>
-                      {categories.map((category) => (
-                        <option key={category._id} value={category._id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      CMC ID
-                    </label>
-                    <input
-                      type="text"
-                      name="cmcId"
-                      value={formData.cmcId}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="CoinMarketCap ID"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      CG ID
-                    </label>
-                    <input
-                      type="text"
-                      name="cgId"
-                      value={formData.cgId}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="CoinGecko ID"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Decimals
-                    </label>
-                    <input
-                      type="number"
-                      name="decimals"
-                      value={formData.decimals || ""}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., 9"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Icon URL
-                    </label>
-                    <div className="flex items-center gap-4">
-                      <input
-                        type="url"
-                        name="icon"
-                        value={formData.icon || ""}
-                        onChange={handleInputChange}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="https://example.com/icon.png"
-                      />
-                      {formData.icon && (
-                        <img 
-                          src={formData.icon} 
-                          alt="Token Icon" 
-                          className="w-12 h-12 rounded-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = '/default-token-icon.png';
-                          }}
-                        />
+                      {metadataLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                          Fetch Data
+                        </>
                       )}
-                    </div>
+                    </button>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Market Cap (USD)
-                    </label>
-                    <input
-                      type="text"
-                      name="marketCap"
-                      value={formData.marketCap || ""}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., 1000000000"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Holders
-                    </label>
-                    <input
-                      type="text"
-                      name="holder"
-                      value={formData.holder || ""}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., 1000000"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Total Supply
-                    </label>
-                    <input
-                      type="text"
-                      name="supply"
-                      value={formData.supply || ""}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., 1000000000000"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Price (USD)
-                    </label>
-                    <input
-                      type="text"
-                      name="price"
-                      value={formData.price || ""}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., 0.001234"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      24h Volume
-                    </label>
-                    <input
-                      type="number"
-                      name="volume"
-                      value={formData.volume || ""}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., 1000000"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      24h Price Change (%)
-                    </label>
-                    <input
-                      type="text"
-                      name="priceChange24h"
-                      value={formData.priceChange24h || ""}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., 5.67"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Token Created At
-                    </label>
-                    <input
-                      type="datetime-local"
-                      name="tokenCreatedAt"
-                      value={formData.tokenCreatedAt ? new Date(formData.tokenCreatedAt).toISOString().slice(0, 16) : ""}
-                      onChange={(e) => setFormData(prev => ({ ...prev, tokenCreatedAt: e.target.value ? new Date(e.target.value).toISOString() : "" }))}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </>
+                  {metadataError && (
+                    <p className="mt-1 text-sm text-red-600">{metadataError}</p>
+                  )}
+                </div>
               )}
 
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
+                  Name {!isEditMode && "*"}
                 </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
                   onChange={handleInputChange}
-                  rows={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter token description"
+                  placeholder="Enter token name"
+                  required={!isEditMode}
                 />
               </div>
 
-              {isEditMode && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category *
-                  </label>
-                  <select
-                    name="category"
-                    value={formData.category}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Symbol *
+                </label>
+                <input
+                  type="text"
+                  name="symbol"
+                  value={formData.symbol}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                  placeholder="e.g., BTC"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category *
+                </label>
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="">Select Category</option>
+                  {categories.map((category) => (
+                    <option key={category._id} value={category._id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  CMC ID
+                </label>
+                <input
+                  type="text"
+                  name="cmcId"
+                  value={formData.cmcId}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="CoinMarketCap ID"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  CG ID
+                </label>
+                <input
+                  type="text"
+                  name="cgId"
+                  value={formData.cgId}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="CoinGecko ID"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Decimals
+                </label>
+                <input
+                  type="number"
+                  name="decimals"
+                  value={formData.decimals || ""}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., 9"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Icon URL
+                </label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="url"
+                    name="icon"
+                    value={formData.icon || ""}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map((category) => (
-                      <option key={category._id} value={category._id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="https://example.com/icon.png"
+                  />
+                  {formData.icon && (
+                    <img 
+                      src={formData.icon} 
+                      alt="Token Icon" 
+                      className="w-12 h-12 rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = '/default-token-icon.png';
+                      }}
+                    />
+                  )}
                 </div>
-              )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Market Cap (USD)
+                </label>
+                <input
+                  type="text"
+                  name="marketCap"
+                  value={formData.marketCap || ""}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., 1000000000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Holders
+                </label>
+                <input
+                  type="text"
+                  name="holder"
+                  value={formData.holder || ""}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., 1000000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Total Supply
+                </label>
+                <input
+                  type="text"
+                  name="supply"
+                  value={formData.supply || ""}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., 1000000000000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Price (USD)
+                </label>
+                <input
+                  type="text"
+                  name="price"
+                  value={formData.price || ""}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., 0.001234"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  24h Volume
+                </label>
+                <input
+                  type="number"
+                  name="volume"
+                  value={formData.volume || ""}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., 1000000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  24h Price Change (%)
+                </label>
+                <input
+                  type="text"
+                  name="priceChange24h"
+                  value={formData.priceChange24h || ""}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., 5.67"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Token Created At
+                </label>
+                <input
+                  type="datetime-local"
+                  name="tokenCreatedAt"
+                  value={formData.tokenCreatedAt ? new Date(formData.tokenCreatedAt).toISOString().slice(0, 16) : ""}
+                  onChange={(e) => setFormData(prev => ({ ...prev, tokenCreatedAt: e.target.value ? new Date(e.target.value).toISOString() : "" }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Slippage (%)
+                </label>
+                <input
+                  type="text"
+                  name="slippage"
+                  value={formData.slippage || ""}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., 0.5"
+                />
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -890,21 +866,19 @@ export default function TokenForm() {
                 </select>
               </div>
 
-              {isEditMode && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Slippage (%)
-                  </label>
-                  <input
-                    type="text"
-                    name="slippage"
-                    value={formData.slippage || ""}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., 0.5"
-                  />
-                </div>
-              )}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter token description"
+                />
+              </div>
 
 
             </div>
@@ -1062,34 +1036,6 @@ export default function TokenForm() {
             </div>
           </div>
 
-          {/* Icon Field - Only show in edit mode */}
-          {isEditMode && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Icon URL
-              </label>
-              <div className="flex items-center gap-4">
-                <input
-                  type="text"
-                  name="icon"
-                  value={formData.icon}
-                  onChange={handleInputChange}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter icon URL"
-                />
-                {formData.icon && (
-                  <img 
-                    src={formData.icon} 
-                    alt="Token Icon" 
-                    className="w-12 h-12 rounded-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = '/default-token-icon.png'; // Add a default icon path
-                    }}
-                  />
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Social Links Card */}
           <div className="bg-white shadow-md rounded-lg overflow-hidden">
