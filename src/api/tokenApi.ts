@@ -1,4 +1,5 @@
 import axiosInstance from './axiosConfig';
+import { getCompleteTokenData } from './solanaFmApi.ts';
 
 export interface Token {
   _id: string;
@@ -95,6 +96,22 @@ export interface GraphDataResponse {
   data: GraphDataPoint[];
 }
 
+// Small retry helper for transient backend failures (e.g., upstream RPC undici fetch failed)
+async function withRetry<T>(fn: () => Promise<T>, retries = 2, baseDelayMs = 300): Promise<T> {
+  try {
+    return await fn();
+  } catch (err: any) {
+    if (retries <= 0) throw err;
+    const status = err?.response?.status;
+    const isTransient = !err?.response || status >= 500 || err?.code === 'NETWORK_ERROR' || err?.code === 'ECONNABORTED';
+    if (!isTransient) throw err;
+    const attempt = 3 - retries;
+    const delay = baseDelayMs * Math.pow(2, attempt); // 300, 600
+    await new Promise(res => setTimeout(res, delay));
+    return withRetry(fn, retries - 1, baseDelayMs);
+  }
+}
+
 export const tokenApi = {
   // Get all tokens (admin endpoint)
   getTokens: async (): Promise<Token[]> => {
@@ -110,50 +127,16 @@ export const tokenApi = {
     return response.data;
   },
 
-  // Get trending tokens from Solscan
-  getTrendingTokens: async (limit: number = 20) => {
-    try {
-      const { solscanApiService } = await import('./solscanApi');
-      const tokens = await solscanApiService.getTrendingTokens(limit);
-      return {
-        data: tokens,
-        success: true,
-        message: 'Trending tokens fetched successfully'
-      };
-    } catch (error) {
-      console.error('Error in getTrendingTokens:', error);
-      return {
-        data: [],
-        success: false,
-        message: 'Failed to fetch trending tokens'
-      };
-    }
+  // Get trending tokens
+  getTrendingTokens: async () => {
+    const response = await axiosInstance.get('/tokens/trending');
+    return response.data;
   },
 
-  // Get top tokens from Solscan
-  getTopTokens: async (limit: number = 20) => {
-    try {
-      const { solscanApiService } = await import('./solscanApi');
-      const tokens = await solscanApiService.getTopTokens(limit);
-      return {
-        data: {
-          items: tokens,
-          total: tokens.length
-        },
-        success: true,
-        message: 'Top tokens fetched successfully'
-      };
-    } catch (error) {
-      console.error('Error in getTopTokens:', error);
-      return {
-        data: {
-          items: [],
-          total: 0
-        },
-        success: false,
-        message: 'Failed to fetch top tokens'
-      };
-    }
+  // Get top tokens
+  getTopTokens: async () => {
+    const response = await axiosInstance.get('/tokens/top');
+    return response.data;
   },
 
   // Get token metadata
@@ -162,10 +145,9 @@ export const tokenApi = {
     return response.data;
   },
 
-  // Get enhanced token metadata from Solscan
+  // Get enhanced token metadata from Solana FM
   getEnhancedTokenMetadata: async (address: string) => {
-    const { solscanApiService } = await import('./solscanApi');
-    return await solscanApiService.getComprehensiveTokenData(address);
+    return await getCompleteTokenData(address);
   },
 
   // Admin endpoints
@@ -220,32 +202,42 @@ export const tokenApi = {
 
   // Activate token graph cron data by ID
   activateGraphCron: async (id: string): Promise<{ message: string }> => {
-    const response = await axiosInstance.put(`/admin/token/graph/cron/active/${id}`);
-    return response.data;
+    return withRetry(async () => {
+      const response = await axiosInstance.put(`/admin/token/graph/cron/active/${id}`);
+      return response.data;
+    });
   },
 
   // Fetch latest graph data for token by ID
   fetchLatestGraphData: async (id: string): Promise<{ message: string }> => {
-    const response = await axiosInstance.put(`/admin/token/graph/allow/latest/${id}`);
-    return response.data;
+    return withRetry(async () => {
+      const response = await axiosInstance.put(`/admin/token/graph/allow/latest/${id}`);
+      return response.data;
+    });
   },
 
   // Delete token graph data by ID
   deleteGraphData: async (id: string): Promise<{ message: string }> => {
-    const response = await axiosInstance.delete(`/admin/token/graph/${id}`);
-    return response.data;
+    return withRetry(async () => {
+      const response = await axiosInstance.delete(`/admin/token/graph/${id}`);
+      return response.data;
+    });
   },
 
   // Get token graph data
   getTokenGraphData: async (tokenId: string, type: 'max' | '1d' | '4h' = 'max'): Promise<GraphDataResponse> => {
-    const response = await axiosInstance.get(`/api/v1/token/graph/${tokenId}?type=${type}`);
-    return response.data;
+    return withRetry(async () => {
+      const response = await axiosInstance.get(`/api/v1/token/graph/${tokenId}?type=${type}`);
+      return response.data;
+    });
   },
 
   // Populate historical graph data
   populateGraphData: async (tokenId: string, days: number = 7): Promise<{ message: string }> => {
-    const response = await axiosInstance.post(`/api/v1/admin/graph/populate/${tokenId}?days=${days}`);
-    return response.data;
+    return withRetry(async () => {
+      const response = await axiosInstance.post(`/api/v1/admin/graph/populate/${tokenId}?days=${days}`);
+      return response.data;
+    });
   },
 
   // Get graph data statistics
@@ -255,14 +247,18 @@ export const tokenApi = {
     lastUpdated: string;
     cronEnabledTokens: number;
   }> => {
-    const response = await axiosInstance.get('/api/v1/admin/graph/stats');
-    return response.data;
+    return withRetry(async () => {
+      const response = await axiosInstance.get('/api/v1/admin/graph/stats');
+      return response.data;
+    });
   },
 
   // Enable automatic graph updates (cron)
   enableGraphCron: async (tokenId: string): Promise<{ message: string }> => {
-    const response = await axiosInstance.post(`/api/v1/admin/graph/enable-cron/${tokenId}`);
-    return response.data;
+    return withRetry(async () => {
+      const response = await axiosInstance.post(`/api/v1/admin/graph/enable-cron/${tokenId}`);
+      return response.data;
+    });
   },
 
   // Get token by ID (for public API)

@@ -109,8 +109,10 @@ export default function UserDetail() {
     setBalanceLoading(true);
     setBalanceError("");
     try {
-      const response: UserBalanceResponse = await userApi.getMyBalance();
-      setBalance(response as any);
+      if (!userId) throw new Error('Missing userId');
+      const resp = await authApi.getUserBalance(userId);
+      const b: any = (resp as any)?.balance || (resp as any)?.body?.balance || resp;
+      setBalance(b);
     } catch (err: any) {
       setBalanceError(err.response?.data?.message || "Failed to fetch balance");
       setBalance(null);

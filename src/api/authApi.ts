@@ -44,6 +44,22 @@ export interface LoginResponse {
   expiresIn?: number; // Token expiry time in seconds
 }
 
+// Small retry helper for transient backend failures
+async function withRetry<T>(fn: () => Promise<T>, retries = 2, baseDelayMs = 300): Promise<T> {
+  try {
+    return await fn();
+  } catch (err: any) {
+    if (retries <= 0) throw err;
+    const status = err?.response?.status;
+    const isTransient = !err?.response || status >= 500 || err?.code === 'NETWORK_ERROR' || err?.code === 'ECONNABORTED';
+    if (!isTransient) throw err;
+    const attempt = 3 - retries; // 0,1
+    const delay = baseDelayMs * Math.pow(2, attempt); // 300, 600
+    await new Promise(res => setTimeout(res, delay));
+    return withRetry(fn, retries - 1, baseDelayMs);
+  }
+}
+
 export const authApi = {
   // Login user
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
@@ -186,14 +202,18 @@ export const authApi = {
   },
 
   // Get user balance by ID (admin only)
-  getUserBalance: async (id: string): Promise<{ balance: number }> => {
-    const response = await axiosInstance.get(`/admin/user/balance/${id}`);
-    
-    // Handle different response structures
-    if (response.data.body) {
-      return response.data.body;
-    }
-    
-    return response.data;
+  getUserBalance: async (id: string): Promise<{ balance: number } | any> => {
+    return withRetry(async () => {
+      const response = await axiosInstance.get(`/admin/user/balance/${id}`);
+      
+      // Handle new response format
+      if (response.data.data) {
+        return response.data.data;
+      }
+      
+      // Fallback to old format
+      if (response.data?.body) return response.data.body;
+      return response.data;
+    });
   },
 }; 

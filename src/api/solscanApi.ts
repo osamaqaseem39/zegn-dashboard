@@ -1,14 +1,40 @@
 import axios from 'axios';
 
-const SOLSCAN_API_KEY = import.meta.env.REACT_APP_SOLSCAN_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVhdGVkQXQiOjE3NTgwMjUyMTc4MDMsImVtYWlsIjoiYXBwLmRlZ25AZ21haWwuY29tIiwiYWN0aW9uIjoidG9rZW4tYXBpIiwiYXBpVmVyc2lvbiI6InYyIiwiaWF0IjoxNzU4MDI1MjE3fQ.OhneHKQeelKe0nJm7ioPJhl9EvdpBtCiei6Vqk_8dC4';
+// Keep original env variable name to avoid breaking existing configs
+const SOLSCAN_API_KEY =
+  import.meta.env.REACT_APP_SOLSCAN_API_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVhdGVkQXQiOjE3NTgwMjUyMTc4MDMsImVtYWlsIjoiYXBwLmRlZ25AZ21haWwuY29tIiwiYWN0aW9uIjoidG9rZW4tYXBpIiwiYXBpVmVyc2lvbiI6InYyIiwiaWF0IjoxNzU4MDI1MjE3fQ.OhneHKQeelKe0nJm7ioPJhl9EvdpBtCiei6Vqk_8dC4';
 
 const solscanApi = axios.create({
   baseURL: 'https://pro-api.solscan.io/v2.0',
   headers: {
     'Accept': 'application/json',
     'token': SOLSCAN_API_KEY
-  }
+  },
+  // Guard against long-hanging requests that later bubble as undici fetch failures upstream
+  timeout: 10000,
 });
+
+// Simple exponential backoff retry for transient failures (network or 5xx)
+solscanApi.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const config: any = error.config || {};
+    const status = error.response?.status;
+    const isNetworkOrTransient = !error.response || status >= 500 || error.code === 'ECONNABORTED';
+
+    config._retryCount = (config._retryCount || 0);
+
+    if (isNetworkOrTransient && config._retryCount < 2) {
+      config._retryCount += 1;
+      const delayMs = 300 * Math.pow(2, config._retryCount - 1); // 300ms, 600ms
+      await new Promise((res) => setTimeout(res, delayMs));
+      return solscanApi(config);
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export interface SolscanTokenMetadata {
   address: string;
