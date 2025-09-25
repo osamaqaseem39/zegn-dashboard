@@ -120,31 +120,36 @@ export default function TokenForm() {
     try {
       setLoading(true);
       const response = await axiosInstance.get(`/admin/token/${address}`);
-      const token = response.data.body.token;
+      const token = response.data.token;
+      
+      if (!token) {
+        console.error("No token data found in response:", response.data);
+        return;
+      }
       
       setFormData({
-        _id: token._id,
-        tokenAddress: token.tokenAddress,
-        symbol: token.symbol,
-        name: token.name,
-        description: token.description,
-        decimals: token.decimals,
-        icon: token.icon,
-        marketCap: token.marketCap,
-        tokenCreatedAt: token.tokenCreatedAt,
-        holder: token.holder,
-        supply: token.supply,
-        price: token.price,
-        volume: token.volume,
-        priceChange24h: token.priceChange24h,
-        cmcId: token.cmcId,
-        cgId: token.cgId,
-        category: token.category,
-        graphType: token.graphType,
-        isSpotlight: token.isSpotlight,
-        isHome: token.isHome,
-        isActive: token.isActive,
-        isLive: token.isLive,
+        _id: token._id || "",
+        tokenAddress: token.tokenAddress || "",
+        symbol: token.symbol || "",
+        name: token.name || "",
+        description: token.description || "",
+        decimals: token.decimals || undefined,
+        icon: token.icon || "",
+        marketCap: token.marketCap || "",
+        tokenCreatedAt: token.tokenCreatedAt || "",
+        holder: token.holder || "",
+        supply: token.supply || "",
+        price: token.price || "",
+        volume: token.volume || undefined,
+        priceChange24h: token.priceChange24h || "",
+        cmcId: token.cmcId || "",
+        cgId: token.cgId || "",
+        category: token.category || "",
+        graphType: token.graphType || "cmc",
+        isSpotlight: token.isSpotlight || false,
+        isHome: token.isHome || false,
+        isActive: token.isActive !== undefined ? token.isActive : true,
+        isLive: token.isLive !== undefined ? token.isLive : true,
         socialUrls: token.socialUrls || {
           web: "",
           instagram: "",
@@ -163,6 +168,7 @@ export default function TokenForm() {
       });
     } catch (err: any) {
       console.error("Error fetching token details:", err);
+      setError(err.response?.data?.message || "Failed to fetch token details");
     } finally {
       setLoading(false);
     }
