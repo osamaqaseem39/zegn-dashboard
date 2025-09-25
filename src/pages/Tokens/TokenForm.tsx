@@ -128,12 +128,24 @@ export default function TokenForm() {
       console.log('  - Status:', response.status);
       console.log('  - Data:', response.data);
       
-      const token = response.data.token;
+      // Handle different response structures
+      let token = response.data.token || response.data.body?.token || response.data;
       
       if (!token) {
         console.error("❌ No token data found in response:", response.data);
         setError("Token not found in database. Please make sure the token exists.");
         return;
+      }
+      
+      // If token is still null/undefined, try accessing the data differently
+      if (!token || !token._id) {
+        console.log("🔍 Trying alternative response structure...");
+        // Sometimes the response might be wrapped differently
+        if (response.data.body && response.data.body.tokens) {
+          token = response.data.body.tokens;
+        } else if (response.data.tokens) {
+          token = response.data.tokens;
+        }
       }
       
       console.log('✅ Token found - Data:', {
@@ -195,11 +207,13 @@ export default function TokenForm() {
       });
       
       if (err.response?.status === 401) {
-        setError("Authentication required. Please sign in to access token details.");
+        setError("Authentication required. Please sign in with admin@zegn.com / Admin123!@# to access token details.");
       } else if (err.response?.status === 404) {
-        setError("Token not found in database. Please make sure the token address is correct.");
+        setError(`Token not found in database. Address: ${address}. Please verify the token exists.`);
+      } else if (err.code === 'NETWORK_ERROR' || err.message === 'Network Error') {
+        setError("Network error. This might be a CORS issue. Check browser console for details.");
       } else {
-        setError(err.response?.data?.message || "Failed to fetch token details");
+        setError(err.response?.data?.message || `Failed to fetch token details: ${err.message}`);
       }
     } finally {
       setLoading(false);

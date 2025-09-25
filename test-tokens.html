@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Token API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; white-space: pre-wrap; }
+        .token-card { background: #f9f9f9; padding: 10px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Token API Test</h1>
+    
+    <div class="section">
+        <h2>Test Known Tokens</h2>
+        <button onclick="testTokens()">Test ai16z and Bonk Tokens</button>
+        <div id="tokenTestResult"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Custom Token Test</h2>
+        <input type="text" id="customAddress" placeholder="Enter token address" style="width: 400px; padding: 8px; margin: 5px;">
+        <button onclick="testCustomToken()">Test Custom Token</button>
+        <div id="customResult"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://degn.vercel.app/api/v1';
+        
+        const knownTokens = [
+            {
+                name: 'ai16z',
+                address: 'HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC'
+            },
+            {
+                name: 'Bonk',
+                address: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263'
+            }
+        ];
+        
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            element.innerHTML = `<div class="${className}">${message}</div>`;
+        }
+        
+        function logPre(elementId, data, type = 'info') {
+            const element = document.getElementById(elementId);
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            element.innerHTML = `<div class="${className}"><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+        }
+
+        async function testSingleToken(address, name) {
+            try {
+                const token = sessionStorage.getItem('token');
+                const headers = {
+                    'Content-Type': 'application/json',
+                };
+                
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                console.log(`Testing ${name} (${address})`);
+                
+                const response = await fetch(`${API_BASE}/admin/token/${address}`, {
+                    headers: headers
+                });
+                
+                const data = await response.json();
+                
+                return {
+                    name: name,
+                    address: address,
+                    status: response.status,
+                    success: response.ok,
+                    data: data,
+                    error: response.ok ? null : data
+                };
+            } catch (error) {
+                return {
+                    name: name,
+                    address: address,
+                    status: 'Network Error',
+                    success: false,
+                    data: null,
+                    error: error.message
+                };
+            }
+        }
+
+        async function testTokens() {
+            log('tokenTestResult', 'Testing known tokens...', 'info');
+            
+            const results = [];
+            
+            for (const token of knownTokens) {
+                const result = await testSingleToken(token.address, token.name);
+                results.push(result);
+            }
+            
+            let output = '<h3>Token Test Results:</h3>';
+            
+            for (const result of results) {
+                const statusClass = result.success ? 'success' : 'error';
+                output += `
+                    <div class="token-card">
+                        <h4>${result.name}</h4>
+                        <p><strong>Address:</strong> ${result.address}</p>
+                        <p><strong>Status:</strong> <span class="${statusClass}">${result.status}</span></p>
+                        <p><strong>Success:</strong> ${result.success}</p>
+                        ${result.error ? `<p><strong>Error:</strong> ${JSON.stringify(result.error)}</p>` : ''}
+                        ${result.success ? `<details><summary>Response Data</summary><pre>${JSON.stringify(result.data, null, 2)}</pre></details>` : ''}
+                    </div>
+                `;
+            }
+            
+            document.getElementById('tokenTestResult').innerHTML = output;
+        }
+
+        async function testCustomToken() {
+            const address = document.getElementById('customAddress').value.trim();
+            if (!address) {
+                log('customResult', 'Please enter a token address', 'error');
+                return;
+            }
+            
+            log('customResult', `Testing custom token: ${address}`, 'info');
+            
+            const result = await testSingleToken(address, 'Custom Token');
+            
+            if (result.success) {
+                logPre('customResult', result.data, 'success');
+            } else {
+                log('customResult', `Error: ${result.status} - ${JSON.stringify(result.error)}`, 'error');
+            }
+        }
+        
+        // Check if user is authenticated
+        window.onload = () => {
+            const token = sessionStorage.getItem('token');
+            if (token) {
+                console.log('Authentication token found');
+            } else {
+                console.log('No authentication token found - some tests may fail');
+            }
+        };
+    </script>
+</body>
+</html>
