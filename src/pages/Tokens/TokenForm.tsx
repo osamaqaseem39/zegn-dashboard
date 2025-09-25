@@ -118,14 +118,29 @@ export default function TokenForm() {
 
   const fetchTokenDetails = useCallback(async (address: string) => {
     try {
+      console.log('📡 fetchTokenDetails - Starting API call with address:', address);
+      console.log('🔑 Auth token in sessionStorage:', sessionStorage.getItem('token') ? 'EXISTS' : 'MISSING');
       setLoading(true);
+      
       const response = await axiosInstance.get(`/admin/token/${address}`);
+      console.log('📡 fetchTokenDetails - Response received:');
+      console.log('  - Status:', response.status);
+      console.log('  - Data:', response.data);
+      
       const token = response.data.token;
       
       if (!token) {
-        console.error("No token data found in response:", response.data);
+        console.error("❌ No token data found in response:", response.data);
+        setError("Token not found in database. Please make sure the token exists.");
         return;
       }
+      
+      console.log('✅ Token found - Data:', {
+        id: token._id,
+        symbol: token.symbol,
+        name: token.name,
+        tokenAddress: token.tokenAddress
+      });
       
       setFormData({
         _id: token._id || "",
@@ -166,9 +181,25 @@ export default function TokenForm() {
         },
         slippage: token.slippage || "",
       });
+      
+      console.log('✅ fetchTokenDetails - Form data set successfully');
     } catch (err: any) {
-      console.error("Error fetching token details:", err);
-      setError(err.response?.data?.message || "Failed to fetch token details");
+      console.error("❌ Error fetching token details:", err);
+      console.error("❌ Error details:", {
+        message: err.message,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        url: err.config?.url
+      });
+      
+      if (err.response?.status === 401) {
+        setError("Authentication required. Please sign in to access token details.");
+      } else if (err.response?.status === 404) {
+        setError("Token not found in database. Please make sure the token address is correct.");
+      } else {
+        setError(err.response?.data?.message || "Failed to fetch token details");
+      }
     } finally {
       setLoading(false);
     }
@@ -232,12 +263,19 @@ export default function TokenForm() {
   useEffect(() => {
     fetchCategories();
     const address = tokenAddress || searchParams.get('address');
+    console.log('🔍 TokenForm useEffect - Debug Info:');
+    console.log('  - tokenAddress from URL:', tokenAddress);
+    console.log('  - isEditMode:', isEditMode);
+    console.log('  - final address:', address);
     
     if (address) {
       fetchTokenMetadata(address);
       if (isEditMode) {
+        console.log('🚀 Calling fetchTokenDetails with address:', address);
         fetchTokenDetails(address);
       }
+    } else {
+      console.log('❌ No address found - skipping token fetch');
     }
   }, [tokenAddress, searchParams, fetchTokenDetails, isEditMode, fetchTokenMetadata]);
 
@@ -419,7 +457,14 @@ export default function TokenForm() {
               <svg className="h-5 w-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-sm text-red-700">{error}</p>
+              <div className="flex-1">
+                <p className="text-sm text-red-700">{error}</p>
+                {error.includes("Authentication required") && (
+                  <Link to="/signin" className="text-sm text-red-600 underline hover:text-red-800 mt-1 block">
+                    Click here to sign in
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         )}
