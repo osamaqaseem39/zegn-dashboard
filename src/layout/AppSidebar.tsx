@@ -50,11 +50,7 @@ const navItems: NavItem[] = [
 ];
 
 const othersItems: NavItem[] = [
-  {
-    name: "API Testing",
-    icon: <HorizontaLDots />,
-    path: "/test/balance",
-  },
+ 
 ];
 
 const AppSidebar: React.FC = () => {
