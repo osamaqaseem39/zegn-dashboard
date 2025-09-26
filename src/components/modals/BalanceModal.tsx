@@ -15,6 +15,7 @@ interface Balance {
   totalHoldingBalance: string;
   tokenAccounts: TokenAccount[];
   holdings: Holding[];
+  error?: string; // Optional error message when balance cannot be fetched
 }
 
 interface BalanceModalProps {
