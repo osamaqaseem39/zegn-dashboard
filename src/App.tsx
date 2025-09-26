@@ -27,6 +27,7 @@ const TrendingTokens = lazy(() => import("./pages/Market/TrendingTokens"));
 const TopTokens = lazy(() => import("./pages/Market/TopTokens"));
 const TokenMarket = lazy(() => import("./pages/Market/TokenMarket"));
 const TransactionHistoryForm = lazy(() => import("./pages/Transactions/TransactionHistoryForm"));
+const BalanceTest = lazy(() => import("./components/test/BalanceTest"));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -79,6 +80,9 @@ export default function App() {
               <Route path="/market" element={<TokenMarket />} />
               <Route path="/market/trending-tokens" element={<TrendingTokens />} />
               <Route path="/market/top-tokens" element={<TopTokens />} />
+              
+              {/* Testing */}
+              <Route path="/test/balance" element={<BalanceTest />} />
             </Route>
             
             {/* Auth Routes */}
