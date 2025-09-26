@@ -42,14 +42,24 @@ interface UserResponse {
 }
 
 interface TokenAccount {
-  // Add token account properties if needed
+  mintAddress: string;
+  symbol: string;
+  balance: string;
+  valueInUSD: string;
 }
 
 interface Holding {
   // Add holding properties if needed
 }
 
-type Balance = any;
+interface Balance {
+  allTimeProfit: string;
+  totalBalance: string;
+  cashBalance: string;
+  totalHoldingBalance: string;
+  tokenAccounts: TokenAccount[];
+  holdings: Holding[];
+}
 
 interface BalanceResponse {
   status: {
@@ -57,7 +67,10 @@ interface BalanceResponse {
     message: string;
   };
   body: {
-    balance: Balance;
+    success: boolean;
+    data: {
+      balance: Balance;
+    };
   };
 }
 
@@ -111,7 +124,8 @@ export default function UserDetail() {
     try {
       if (!userId) throw new Error('Missing userId');
       const resp = await authApi.getUserBalance(userId);
-      const b: any = (resp as any)?.balance || (resp as any)?.body?.balance || resp;
+      // Handle the admin balance API response structure: { success: true, data: { balance } }
+      const b: any = resp?.data?.balance || resp?.balance || resp?.body?.balance || resp;
       setBalance(b);
     } catch (err: any) {
       setBalanceError(err.response?.data?.message || "Failed to fetch balance");
@@ -155,7 +169,7 @@ export default function UserDetail() {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-4">
+        <div className="bg-red-50   border border-red-200 text-red-600 rounded-md p-4">
           {error}
         </div>
       </div>

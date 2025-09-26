@@ -40,7 +40,10 @@ interface BalanceResponse {
     message: string;
   };
   body: {
-    balance: Balance;
+    success: boolean;
+    data: {
+      balance: Balance;
+    };
   };
 }
 
@@ -147,8 +150,23 @@ export default function UserList() {
     setBalanceLoading(true);
     setBalanceError("");
     try {
-      const response = await axiosInstance.get<BalanceResponse>(`/admin/user/balance/${userId}`);
-      setBalance(response.data.body.balance);
+      const response = await axiosInstance.get(`/admin/user/balance/${userId}`);
+      
+      // Handle new response format (nested in data.balance)
+      let balanceData = null;
+      if (response.data?.data?.balance) {
+        balanceData = response.data.data.balance;
+      } else if (response.data?.data) {
+        balanceData = response.data.data;
+      } else if (response.data?.body?.data?.balance) {
+        balanceData = response.data.body.data.balance;
+      } else if (response.data?.body?.balance) {
+        balanceData = response.data.body.balance;
+      } else if (response.data?.balance) {
+        balanceData = response.data.balance;
+      }
+      
+      setBalance(balanceData);
     } catch (err: any) {
       setBalanceError(err.response?.data?.message || "Failed to fetch balance");
       console.error("Error fetching balance:", err);

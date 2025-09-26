@@ -202,18 +202,31 @@ export const authApi = {
   },
 
   // Get user balance by ID (admin only)
-  getUserBalance: async (id: string): Promise<{ balance: number } | any> => {
+  getUserBalance: async (id: string): Promise<any> => {
     return withRetry(async () => {
       const response = await axiosInstance.get(`/admin/user/balance/${id}`);
       
-      // Handle new response format
-      if (response.data.data) {
-        return response.data.data;
+      // Admin balance API returns: { success: true, data: { balance } }
+      if (response.data?.data?.balance) {
+        return { data: { balance: response.data.data.balance } };
       }
       
-      // Fallback to old format
-      if (response.data?.body) return response.data.body;
-      return response.data;
+      // Handle nested format
+      if (response.data?.body?.data?.balance) {
+        return { data: { balance: response.data.body.data.balance } };
+      }
+      
+      // Handle direct balance in data
+      if (response.data?.data) {
+        return { data: { balance: response.data.data } };
+      }
+      
+      // Fallback formats
+      if (response.data?.body) {
+        return { data: { balance: response.data.body } };
+      }
+      
+      return { data: { balance: response.data } };
     });
   },
 }; 

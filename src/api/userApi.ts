@@ -32,7 +32,33 @@ export const userApi = {
       const qs = typeof isHoldings === 'boolean' ? `?isHoldings=${isHoldings}` : '';
       const response = await axiosInstance.get(`/user/balance${qs}`);
       
-      // Handle new response format
+      // Handle new response format (nested in body.data.balance)
+      if (response.data.body?.data?.balance) {
+        const balanceData = response.data.body.data.balance;
+        return {
+          totalBalance: parseFloat(balanceData.totalBalance || '0'),
+          tokens: balanceData.tokenAccounts?.map((token: any) => ({
+            symbol: token.symbol || 'Unknown',
+            balance: parseFloat(token.balance || '0'),
+            value: parseFloat(token.valueInUSD || '0')
+          })) || []
+        };
+      }
+      
+      // Handle data directly in response.data.data
+      if (response.data.data?.balance) {
+        const balanceData = response.data.data.balance;
+        return {
+          totalBalance: parseFloat(balanceData.totalBalance || '0'),
+          tokens: balanceData.tokenAccounts?.map((token: any) => ({
+            symbol: token.symbol || 'Unknown',
+            balance: parseFloat(token.balance || '0'),
+            value: parseFloat(token.valueInUSD || '0')
+          })) || []
+        };
+      }
+      
+      // Handle data directly in response.data.data (fallback)
       if (response.data.data) {
         const balanceData = response.data.data;
         return {
