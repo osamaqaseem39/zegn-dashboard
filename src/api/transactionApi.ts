@@ -1,73 +1,79 @@
 import axiosInstance from './axiosConfig';
 
-export interface Token {
-  symbol: string;
-  name: string;
-  address: string;
-  decimals: number;
-  logoURI: string;
-}
-
-export interface BuyTokenRequest {
-  tokenSymbol: string;
+export interface Transaction {
+  _id: string;
+  to: string;
+  transactionHash: string;
+  amount: string;
+  amountInUSD: string;
+  currentTokenPrice: string;
+  amountOutInfo: {
+    amount: string;
+    unitPriceInUSD: string;
+  };
+  profit: string;
   tokenAddress: string;
-  amount: number;
-  slippage?: number;
+  status: 'success' | 'failed' | 'pending';
+  platformFee: string;
+  type: 'buy' | 'sell' | 'send' | 'referral';
+  user: string;
+  transaction: string;
+  token: {
+    _id: string;
+    symbol: string;
+    name: string;
+    tokenAddress: string;
+    decimals: number;
+    price: number;
+  };
+  isActive: boolean;
+  error: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface SellTokenRequest {
-  tokenSymbol: string;
-  tokenAddress: string;
-  amount: number;
-  slippage?: number;
+export interface BuyTransactionRequest {
+  currentTokenPrice: string;
+  amount: string;
+  amountInUSD: string;
+  slippage?: string;
+  token: string;
 }
 
-export interface SwapTokenRequest {
-  fromTokenSymbol: string;
-  fromTokenAddress: string;
-  toTokenSymbol: string;
-  toTokenAddress: string;
-  amount: number;
-  slippage?: number;
+export interface SellTransactionRequest {
+  currentTokenPrice: string;
+  amount: string;
+  amountInUSD: string;
+  slippage?: string;
+  token: string;
 }
 
-export interface GetQuoteRequest {
-  fromTokenSymbol: string;
-  fromTokenAddress: string;
-  toTokenSymbol: string;
-  toTokenAddress: string;
-  amount: number;
-  slippage?: number;
+export interface SendTransactionRequest {
+  to: string;
+  amount: string;
+  token: string;
+}
+
+export interface TransactionResponse {
+  signature: string;
+  status: 'success' | 'failed' | 'pending';
+  error: string | null;
+  transaction: Transaction | null;
 }
 
 export interface TransactionHistoryRequest {
-  type?: 'buy' | 'sell' | 'swap' | 'deposit' | 'withdrawal';
+  search?: string;
+  type?: string;
+  status?: string;
   tokenSymbol?: string;
-  page?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  minAmount?: string;
+  maxAmount?: string;
+  includePending?: boolean;
+  includeFailed?: boolean;
   limit?: number;
-}
-
-export interface Transaction {
-  _id: string;
-  userId: string;
-  type: 'buy' | 'sell' | 'swap' | 'deposit' | 'withdrawal';
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
-  tokenSymbol: string;
-  tokenAddress: string;
-  amount: number;
-  price: number;
-  fee: number;
-  slippage: number;
-  fromTokenSymbol?: string;
-  fromTokenAddress?: string;
-  toTokenSymbol?: string;
-  toTokenAddress?: string;
-  transactionHash?: string;
-  externalId?: string;
-  errorMessage?: string;
-  metadata?: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
+  offset?: number;
 }
 
 export interface TransactionHistoryResponse {
@@ -80,81 +86,109 @@ export interface TransactionHistoryResponse {
   };
 }
 
-export interface QuoteResponse {
-  fromTokenSymbol: string;
-  fromTokenAddress: string;
-  toTokenSymbol: string;
-  toTokenAddress: string;
-  amount: number;
-  price: number;
-  fee: number;
-  slippage: number;
-  estimatedOutput: number;
-}
-
-export interface TransactionResponse {
-  message: string;
-  transactionId: string;
-  transactionHash: string;
-  amount: number;
-  price: number;
-  fee: number;
-}
-
 export const transactionApi = {
   // Buy token
-  buyToken: async (request: BuyTokenRequest): Promise<TransactionResponse> => {
-    const response = await axiosInstance.post('/transactions/buy', request);
-    return response.data;
+  buyToken: async (transactionData: BuyTransactionRequest): Promise<TransactionResponse> => {
+    try {
+      const response = await axiosInstance.post('/transaction/buy', transactionData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Buy token API error:', error);
+      throw error;
+    }
   },
 
   // Sell token
-  sellToken: async (request: SellTokenRequest): Promise<TransactionResponse> => {
-    const response = await axiosInstance.post('/transactions/sell', request);
-    return response.data;
+  sellToken: async (transactionData: SellTransactionRequest): Promise<TransactionResponse> => {
+    try {
+      const response = await axiosInstance.post('/transaction/sell', transactionData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Sell token API error:', error);
+      throw error;
+    }
   },
 
-  // Swap token
-  swapToken: async (request: SwapTokenRequest): Promise<TransactionResponse> => {
-    const response = await axiosInstance.post('/transactions/swap', request);
-    return response.data;
+  // Send token
+  sendToken: async (transactionData: SendTransactionRequest): Promise<TransactionResponse> => {
+    try {
+      const response = await axiosInstance.post('/transaction/send', transactionData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Send token API error:', error);
+      throw error;
+    }
   },
 
   // Get transaction history
-  getTransactionHistory: async (request: TransactionHistoryRequest): Promise<TransactionHistoryResponse> => {
-    const params = new URLSearchParams();
-    if (request.type) params.append('type', request.type);
-    if (request.tokenSymbol) params.append('tokenSymbol', request.tokenSymbol);
-    if (request.page) params.append('page', request.page.toString());
-    if (request.limit) params.append('limit', request.limit.toString());
-
-    const response = await axiosInstance.get(`/transactions/history?${params.toString()}`);
-    return response.data;
+  getTransactionHistory: async (params?: TransactionHistoryRequest): Promise<TransactionHistoryResponse> => {
+    try {
+      const response = await axiosInstance.get('/transaction/', { params });
+      
+      // Handle different response structures
+      if (response.data.body) {
+        return response.data.body;
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Transaction history API error:', error);
+      throw error;
+    }
   },
 
-  // Get quote for swap
-  getQuote: async (request: GetQuoteRequest): Promise<QuoteResponse> => {
-    const params = new URLSearchParams();
-    params.append('fromTokenSymbol', request.fromTokenSymbol);
-    params.append('fromTokenAddress', request.fromTokenAddress);
-    params.append('toTokenSymbol', request.toTokenSymbol);
-    params.append('toTokenAddress', request.toTokenAddress);
-    params.append('amount', request.amount.toString());
-    if (request.slippage) params.append('slippage', request.slippage.toString());
-
-    const response = await axiosInstance.get(`/transactions/quote?${params.toString()}`);
-    return response.data;
+  // Get transaction by ID
+  getTransactionById: async (transactionId: string): Promise<Transaction> => {
+    try {
+      const response = await axiosInstance.get(`/transaction/${transactionId}`);
+      
+      // Handle different response structures
+      if (response.data.body) {
+        return response.data.body;
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Get transaction API error:', error);
+      throw error;
+    }
   },
 
-  // Get balance
-  getBalance: async (): Promise<{ balance: number }> => {
-    const response = await axiosInstance.get('/transactions/balance');
-    return response.data;
+  // Get transaction analytics
+  getTransactionAnalytics: async (params: {
+    tokenId: string;
+    lastDateTime: string;
+    currentDateTime: string;
+    offset?: number;
+    limit?: number;
+  }): Promise<Transaction[]> => {
+    try {
+      const response = await axiosInstance.get('/transaction/analytics', { params });
+      
+      // Handle different response structures
+      if (response.data.body) {
+        return response.data.body;
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Transaction analytics API error:', error);
+      throw error;
+    }
   },
 
-  // Get transaction status
-  getTransactionStatus: async (transactionId: string): Promise<Transaction> => {
-    const response = await axiosInstance.get(`/transactions/status/${transactionId}`);
-    return response.data;
-  },
-}; 
+  // Get transaction network details
+  getTransactionNetworkDetails: async (transactionHash: string): Promise<{
+    networkFee: number;
+    networkFeeInUSD: number;
+    platformFee: number;
+  }> => {
+    try {
+      const response = await axiosInstance.get(`/transaction/network/${transactionHash}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Transaction network details API error:', error);
+      throw error;
+    }
+  }
+};
