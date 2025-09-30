@@ -115,34 +115,39 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, baseDelayMs = 300
 export const tokenApi = {
   // Get all tokens (admin endpoint)
   getTokens: async (): Promise<Token[]> => {
-    const response = await axiosInstance.get('/admin/token');
-    // Backend returns { status: {...}, body: { tokens: { tokens: Token[] } } }
-    return response.data.body?.tokens?.tokens ?? response.data.tokens ?? response.data;
+    const res = await axiosInstance.get('/admin/token');
+    // Axios is configured to unwrap the response; res can be one of:
+    // { tokens: Token[] } | { tokens: { tokens: Token[] } } | Token[]
+    if (Array.isArray(res)) return res as Token[];
+    const maybeTokens = (res as any)?.tokens;
+    if (Array.isArray(maybeTokens)) return maybeTokens as Token[];
+    if (maybeTokens && Array.isArray(maybeTokens.tokens)) return maybeTokens.tokens as Token[];
+    return [];
   },
 
   // Get token prices
   getTokenPrices: async (symbols?: string[]): Promise<TokenPricesResponse> => {
     const params = symbols && symbols.length > 0 ? `?symbols=${symbols.join(',')}` : '';
-    const response = await axiosInstance.get(`/tokens/prices${params}`);
-    return response.data;
+    const res = await axiosInstance.get(`/tokens/prices${params}`);
+    return res as TokenPricesResponse;
   },
 
   // Get trending tokens
   getTrendingTokens: async () => {
-    const response = await axiosInstance.get('/tokens/trending');
-    return response.data;
+    const res = await axiosInstance.get('/tokens/trending');
+    return res;
   },
 
   // Get top tokens
   getTopTokens: async () => {
-    const response = await axiosInstance.get('/tokens/top');
-    return response.data;
+    const res = await axiosInstance.get('/tokens/top');
+    return res;
   },
 
   // Get token metadata
   getTokenMetadata: async (address: string) => {
-    const response = await axiosInstance.get(`/tokens/metadata/${address}`);
-    return response.data;
+    const res = await axiosInstance.get(`/tokens/metadata/${address}`);
+    return res;
   },
 
   // Get enhanced token metadata from Solana FM
@@ -153,90 +158,89 @@ export const tokenApi = {
   // Admin endpoints
   // Create a new token
   create: async (tokenData: CreateTokenRequest): Promise<Token> => {
-    const response = await axiosInstance.post('/admin/token/create', tokenData);
-    return response.data;
+    const res = await axiosInstance.post('/admin/token/create', tokenData);
+    return res as Token;
   },
 
   // Update token by ID
   update: async (id: string, tokenData: UpdateTokenRequest): Promise<Token> => {
-    const response = await axiosInstance.put(`/admin/token/update/${id}`, tokenData);
-    return response.data;
+    const res = await axiosInstance.put(`/admin/token/update/${id}`, tokenData);
+    return res as Token;
   },
 
   // Get all tokens with filters (admin)
   list: async (filters?: TokenFilters): Promise<{ tokens: Token[]; total: number }> => {
-    const response = await axiosInstance.get('/admin/token', { params: filters });
-    return response.data;
+    const res = await axiosInstance.get('/admin/token', { params: filters });
+    return res as any;
   },
 
   // Get token by address (admin)
   getByAddress: async (address: string): Promise<Token> => {
-    const response = await axiosInstance.get(`/admin/token/${address}`);
-    // Backend returns { status: {...}, body: { token: Token } }
-    return response.data.body?.token ?? response.data.token ?? response.data;
+    const res = await axiosInstance.get(`/admin/token/${address}`);
+    return (res as any)?.token ?? (res as any);
   },
 
   // Toggle token active status by address
   toggleActive: async (address: string): Promise<Token> => {
-    const response = await axiosInstance.put(`/admin/token/active/${address}`);
-    return response.data;
+    const res = await axiosInstance.put(`/admin/token/active/${address}`);
+    return res as Token;
   },
 
   // Toggle token spotlight status by address
   toggleSpotlight: async (address: string): Promise<Token> => {
-    const response = await axiosInstance.put(`/admin/token/spotlight/${address}`);
-    return response.data;
+    const res = await axiosInstance.put(`/admin/token/spotlight/${address}`);
+    return res as Token;
   },
 
   // Toggle token live status by address
   toggleLive: async (address: string): Promise<Token> => {
-    const response = await axiosInstance.put(`/admin/token/live/${address}`);
-    return response.data;
+    const res = await axiosInstance.put(`/admin/token/live/${address}`);
+    return res as Token;
   },
 
   // Toggle token home status by address
   toggleHome: async (address: string): Promise<Token> => {
-    const response = await axiosInstance.put(`/admin/token/home/${address}`);
-    return response.data;
+    const res = await axiosInstance.put(`/admin/token/home/${address}`);
+    return res as Token;
   },
 
   // Activate token graph cron data by ID
   activateGraphCron: async (id: string): Promise<{ message: string }> => {
     return withRetry(async () => {
-      const response = await axiosInstance.put(`/admin/token/graph/cron/active/${id}`);
-      return response.data;
+      const res = await axiosInstance.put(`/admin/token/graph/cron/active/${id}`);
+      return res as any;
     });
   },
 
   // Fetch latest graph data for token by ID
   fetchLatestGraphData: async (id: string): Promise<{ message: string }> => {
     return withRetry(async () => {
-      const response = await axiosInstance.put(`/admin/token/graph/allow/latest/${id}`);
-      return response.data;
+      const res = await axiosInstance.put(`/admin/token/graph/allow/latest/${id}`);
+      return res as any;
     });
   },
 
   // Delete token graph data by ID
   deleteGraphData: async (id: string): Promise<{ message: string }> => {
     return withRetry(async () => {
-      const response = await axiosInstance.delete(`/admin/token/graph/${id}`);
-      return response.data;
+      const res = await axiosInstance.delete(`/admin/token/graph/${id}`);
+      return res as any;
     });
   },
 
   // Get token graph data
   getTokenGraphData: async (tokenId: string, type: 'max' | '1d' | '4h' = 'max'): Promise<GraphDataResponse> => {
     return withRetry(async () => {
-      const response = await axiosInstance.get(`/token/graph/${tokenId}?type=${type}`);
-      return response.data;
+      const res = await axiosInstance.get(`/token/graph/${tokenId}?type=${type}`);
+      return res as GraphDataResponse;
     });
   },
 
   // Populate historical graph data
   populateGraphData: async (tokenId: string, days: number = 7): Promise<{ message: string }> => {
     return withRetry(async () => {
-      const response = await axiosInstance.post(`/admin/graph/populate/${tokenId}?days=${days}`);
-      return response.data;
+      const res = await axiosInstance.post(`/admin/graph/populate/${tokenId}?days=${days}`);
+      return res as any;
     });
   },
 
@@ -248,24 +252,24 @@ export const tokenApi = {
     cronEnabledTokens: number;
   }> => {
     return withRetry(async () => {
-      const response = await axiosInstance.get('/admin/graph/stats');
-      // Backend returns { success: true, stats: {...} }
-      return response.data?.stats ?? response.data;
+      const res = await axiosInstance.get('/admin/graph/stats');
+      // Axios unwraps to stats object now
+      return res as any;
     });
   },
 
   // Enable automatic graph updates (cron)
   enableGraphCron: async (tokenId: string): Promise<{ message: string }> => {
     return withRetry(async () => {
-      const response = await axiosInstance.post(`/admin/graph/enable-cron/${tokenId}`);
-      return response.data;
+      const res = await axiosInstance.post(`/admin/graph/enable-cron/${tokenId}`);
+      return res as any;
     });
   },
 
   // Get token by ID (for public API)
   getTokenById: async (id: string): Promise<Token> => {
-      const response = await axiosInstance.get(`/token/${id}`);
-    return response.data;
+    const res = await axiosInstance.get(`/token/${id}`);
+    return res as Token;
   },
 
   // Backward compatibility aliases

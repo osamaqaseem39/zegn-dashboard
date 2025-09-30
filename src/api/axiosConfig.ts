@@ -28,14 +28,11 @@ axiosInstance.interceptors.request.use(
 // Response Interceptor
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Unwrap standard { status, body } shape if present
-    if (response?.data && typeof response.data === 'object') {
-      const hasBody = Object.prototype.hasOwnProperty.call(response.data, 'body');
-      if (hasBody) {
-        return response.data.body;
-      }
+    const data = response?.data;
+    if (data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'body')) {
+      return data.body;
     }
-    return response;
+    return data;
   },
   async (error) => {
     const originalRequest = error.config;
