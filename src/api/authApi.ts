@@ -65,63 +65,41 @@ export const authApi = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
     console.log('authApi: Making login request to /admin/user/sign-in with:', credentials);
     try {
-      const response = await axiosInstance.post('/admin/user/sign-in', credentials);
-      console.log('authApi: Login response:', response.data);
-      
-      // Handle different response structures
-      if (response.data.status && response.data.status.code !== 200 && response.data.status.code !== 201) {
-        throw new Error(response.data.status.message || 'Login failed');
-      }
-      
-      // If response has a body property (successful response), use it
-      if (response.data.body) {
-        console.log('authApi: Using response.body:', response.data.body);
-        console.log('authApi: Extracted token:', response.data.body.token);
-        console.log('authApi: Extracted user:', response.data.body.user);
-        console.log('authApi: Extracted expiresIn:', response.data.body.expiresIn || response.data.body.expires_in);
-        
-        // Extract token, user, and expiresIn from the body
-        return {
-          token: response.data.body.token,
-          user: response.data.body.user,
-          message: response.data.status.message || 'Login successful',
-          expiresIn: response.data.body.expiresIn || response.data.body.expires_in
-        };
-      }
-      
-      // If response has a data property, use it, otherwise use the response directly
-      const data = response.data.data || response.data;
-      console.log('authApi: Using fallback data:', data);
-      console.log('authApi: Fallback token:', data.token);
-      console.log('authApi: Fallback user:', data.user);
-      return data;
+      // axiosInstance returns unwrapped payload now
+      const data: any = await axiosInstance.post('/admin/user/sign-in', credentials);
+      console.log('authApi: Login response:', data);
+
+      if (!data) throw new Error('Empty login response');
+
+      // Normalize fields
+      const token = data.token;
+      const user = data.user;
+      const message = data.message || 'Login successful';
+      const expiresIn = data.expiresIn || data.expires_in;
+
+      if (!token || !user) throw new Error('Invalid login response shape');
+
+      return { token, user, message, expiresIn };
     } catch (error: any) {
-      console.error('authApi: Login error details:', error.response?.data);
+      console.error('authApi: Login error details:', error?.response?.data || error?.message);
       throw error;
     }
   },
 
   // Register user
   register: async (userData: RegisterRequest): Promise<LoginResponse> => {
-    const response = await axiosInstance.post('/auth/register', userData);
-    
-    // Handle different response structures for register
-    if (response.data.body) {
-      return {
-        token: response.data.body.token,
-        user: response.data.body.user,
-        message: response.data.status.message || 'Registration successful',
-        expiresIn: response.data.body.expiresIn || response.data.body.expires_in
-      };
-    }
-    
-    return response.data;
+    const data: any = await axiosInstance.post('/auth/register', userData);
+    return {
+      token: data.token,
+      user: data.user,
+      message: data.message || 'Registration successful',
+      expiresIn: data.expiresIn || data.expires_in,
+    };
   },
 
   // Get user profile - Note: This might need to be a different endpoint
   // Since there's no /admin/user/profile in the API docs, using the current user's profile
   getProfile: async (): Promise<UserProfile> => {
-    // For now, return the user data from sessionStorage since we don't have a profile endpoint
     const userStr = sessionStorage.getItem('user');
     if (userStr) {
       return JSON.parse(userStr);
@@ -131,7 +109,6 @@ export const authApi = {
 
   // Update user profile - Note: No update profile endpoint in admin API
   updateProfile: async (profileData: Partial<UserProfile>): Promise<UserProfile> => {
-    // For now, just update the sessionStorage
     const userStr = sessionStorage.getItem('user');
     if (userStr) {
       const user = JSON.parse(userStr);
@@ -144,7 +121,6 @@ export const authApi = {
 
   // Get user balance - Note: No current user balance endpoint, only by ID
   getBalance: async (): Promise<{ balance: number }> => {
-    // For now, return 0 or get from user data
     const userStr = sessionStorage.getItem('user');
     if (userStr) {
       const user = JSON.parse(userStr);
@@ -155,78 +131,45 @@ export const authApi = {
 
   // Forgot password
   forgotPassword: async (email: string): Promise<{ message: string }> => {
-    const response = await axiosInstance.post('/auth/forgot-password', { email });
-    return response.data;
+    const data: any = await axiosInstance.post('/auth/forgot-password', { email });
+    return data;
   },
 
   // Reset password
   resetPassword: async (token: string, newPassword: string): Promise<{ message: string }> => {
-    const response = await axiosInstance.post('/auth/reset-password', { token, newPassword });
-    return response.data;
+    const data: any = await axiosInstance.post('/auth/reset-password', { token, newPassword });
+    return data;
   },
 
   // Verify email
   verifyEmail: async (token: string): Promise<{ message: string }> => {
-    const response = await axiosInstance.post('/auth/verify-email', { token });
-    return response.data;
+    const data: any = await axiosInstance.post('/auth/verify-email', { token });
+    return data;
   },
 
   // Create test admin user for development
   createTestAdmin: async (adminData: CreateAdminRequest): Promise<{ message: string; admin: any }> => {
-    const response = await axiosInstance.post('/admin/user/create-test-admin', adminData);
-    return response.data;
+    const data: any = await axiosInstance.post('/admin/user/create-test-admin', adminData);
+    return data;
   },
 
   // Get all users (admin only)
   getUsers: async (params?: { limit?: number; offset?: number; search?: string }): Promise<{ users: UserProfile[]; total: number }> => {
-    const response = await axiosInstance.get('/admin/user/list', { params });
-    
-    // Handle different response structures
-    if (response.data.body) {
-      return response.data.body;
-    }
-    
-    return response.data;
+    const data: any = await axiosInstance.get('/admin/user/list', { params });
+    return data;
   },
 
   // Get user by ID (admin only)
   getUserById: async (id: string): Promise<UserProfile> => {
-    const response = await axiosInstance.get(`/admin/user/findOne/${id}`);
-    
-    // Handle different response structures
-    if (response.data.body) {
-      return response.data.body;
-    }
-    
-    return response.data;
+    const data: any = await axiosInstance.get(`/admin/user/findOne/${id}`);
+    return data;
   },
 
   // Get user balance by ID (admin only)
   getUserBalance: async (id: string): Promise<any> => {
     return withRetry(async () => {
-      const response = await axiosInstance.get(`/admin/user/balance/${id}`);
-      
-      // Admin balance API returns: { success: true, data: { balance } }
-      if (response.data?.data?.balance) {
-        return { data: { balance: response.data.data.balance } };
-      }
-      
-      // Handle nested format
-      if (response.data?.body?.data?.balance) {
-        return { data: { balance: response.data.body.data.balance } };
-      }
-      
-      // Handle direct balance in data
-      if (response.data?.data) {
-        return { data: { balance: response.data.data } };
-      }
-      
-      // Fallback formats
-      if (response.data?.body) {
-        return { data: { balance: response.data.body } };
-      }
-      
-      return { data: { balance: response.data } };
+      const data: any = await axiosInstance.get(`/admin/user/balance/${id}`);
+      return data;
     });
   },
 }; 
