@@ -249,7 +249,8 @@ export const tokenApi = {
   }> => {
     return withRetry(async () => {
       const response = await axiosInstance.get('/admin/graph/stats');
-      return response.data;
+      // Backend returns { success: true, stats: {...} }
+      return response.data?.stats ?? response.data;
     });
   },
 
