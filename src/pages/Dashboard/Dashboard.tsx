@@ -392,17 +392,17 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div>
                     <div className="font-medium capitalize">{transaction.type}</div>
-                    <div className="text-sm text-gray-600">{transaction.tokenSymbol}</div>
+                    <div className="text-sm text-gray-600">{transaction.token?.symbol}</div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-medium">{formatCurrency(transaction.amount)}</div>
+                  <div className="font-medium">{formatCurrency(parseFloat(transaction.amount || '0'))}</div>
                   <div className="text-sm text-gray-600">
                     {new Date(transaction.createdAt).toLocaleDateString()}
                   </div>
                 </div>
                 <Badge variant={
-                  transaction.status === 'completed' ? 'default' :
+                  transaction.status === 'success' ? 'default' :
                   transaction.status === 'pending' ? 'secondary' :
                   transaction.status === 'failed' ? 'destructive' : 'outline'
                 }>

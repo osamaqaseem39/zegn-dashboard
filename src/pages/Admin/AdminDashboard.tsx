@@ -81,7 +81,7 @@ const AdminDashboard: React.FC = () => {
 
       // Calculate stats
       const activeUsers = usersData.users?.filter(user => user.isActive).length || 0;
-      const totalVolume = transactionsData.transactions?.reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0;
+      const totalVolume = transactionsData.transactions?.reduce((sum, tx) => sum + (parseFloat(tx.amount || '0') || 0), 0) || 0;
       const activeTokens = tokensData.filter(token => token.isActive).length;
 
       setStats({
