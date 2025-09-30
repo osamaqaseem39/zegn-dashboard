@@ -84,7 +84,7 @@ const TransactionHistoryForm: React.FC = () => {
       setLoading(true);
       
       const request: TransactionHistoryRequest = {
-        page: data.pagination.page,
+        offset: (data.pagination.page - 1) * data.pagination.limit,
         limit: data.pagination.limit,
         type: data.filters.type as any,
         tokenSymbol: data.filters.tokenSymbol || undefined,
@@ -150,13 +150,13 @@ const TransactionHistoryForm: React.FC = () => {
   };
 
   const generateCSV = (transactions: Transaction[]) => {
-    const headers = ['Date', 'Type', 'Token', 'Amount', 'Price', 'Status', 'Transaction Hash'];
+    const headers = ['Date', 'Type', 'Token', 'Amount', 'Unit Price (USD)', 'Status', 'Transaction Hash'];
     const rows = transactions.map(tx => [
       new Date(tx.createdAt).toLocaleDateString(),
       tx.type,
-      tx.tokenSymbol,
+      tx.token?.symbol || '',
       tx.amount,
-      tx.price,
+      tx.amountOutInfo?.unitPriceInUSD || '',
       tx.status,
       tx.transactionHash || 'N/A',
     ]);
@@ -196,7 +196,7 @@ const TransactionHistoryForm: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
+      case 'success':
         return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'failed':
         return <XCircle className="h-4 w-4 text-red-600" />;
@@ -218,7 +218,7 @@ const TransactionHistoryForm: React.FC = () => {
 
   const statusOptions = [
     { value: '', label: 'All Statuses' },
-    { value: 'completed', label: 'Completed' },
+    { value: 'success', label: 'Completed' },
     { value: 'pending', label: 'Pending' },
     { value: 'processing', label: 'Processing' },
     { value: 'failed', label: 'Failed' },
@@ -393,7 +393,7 @@ const TransactionHistoryForm: React.FC = () => {
                   Completed
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {data.transactions.filter(tx => tx.status === 'completed').length}
+                  {data.transactions.filter(tx => tx.status === 'success').length}
                 </p>
               </div>
             </div>
@@ -475,7 +475,7 @@ const TransactionHistoryForm: React.FC = () => {
                           {transaction.type}
                         </span>
                         <Badge variant="outline" className="text-xs">
-                          {transaction.tokenSymbol}
+                          {transaction.token?.symbol}
                         </Badge>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -487,10 +487,10 @@ const TransactionHistoryForm: React.FC = () => {
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
                       <div className="font-medium">
-                        {formatCurrency(transaction.amount)}
+                        {formatCurrency(parseFloat(transaction.amount || '0'))}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        @ {formatCurrency(transaction.price)}
+                        @ {formatCurrency(parseFloat(transaction.amountOutInfo?.unitPriceInUSD || '0'))}
                       </div>
                     </div>
                     
@@ -498,7 +498,7 @@ const TransactionHistoryForm: React.FC = () => {
                       {getStatusIcon(transaction.status)}
                       <Badge
                         variant={
-                          transaction.status === 'completed' ? 'default' :
+                          transaction.status === 'success' ? 'default' :
                           transaction.status === 'pending' ? 'secondary' :
                           transaction.status === 'failed' ? 'destructive' : 'outline'
                         }
