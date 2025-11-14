@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { authApi, CreateAdminRequest } from '../../api/authApi';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Input } from '../../components/form/input/InputField';
+import Input from '../../components/form/input/InputField';
 import { Shield, User, Mail, Lock, ArrowLeft } from 'lucide-react';
 
 const CreateAdmin: React.FC = () => {
@@ -43,7 +43,7 @@ const CreateAdmin: React.FC = () => {
       setError(null);
       setSuccess(null);
 
-      const response = await authApi.createAdmin(formData);
+      const response = await authApi.createTestAdmin(formData);
       setSuccess(`Admin created successfully! Email: ${response.admin.email}`);
       
       // Reset form

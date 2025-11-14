@@ -7,9 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import { Badge } from '../../components/ui/badge';
 import { Progress } from '../../components/ui/progress';
 import { authApi, UserProfile } from '../../api/authApi';
-import { transactionApi, Transaction, QuoteResponse } from '../../api/transactionApi';
+import { transactionApi, Transaction } from '../../api/transactionApi';
 import { tokenApi, Token, TokenPricesResponse } from '../../api/tokenApi';
 import { referralApi, ReferralStats, ReferralEarnings } from '../../api/referralApi';
+import TokenDashboard from '../../components/tokens/TokenDashboard';
+import CoinGeckoDemo from '../../components/tokens/CoinGeckoDemo';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -44,7 +46,7 @@ const Dashboard: React.FC = () => {
   const [selectedToken, setSelectedToken] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [slippage, setSlippage] = useState<string>('1');
-  const [quote, setQuote] = useState<QuoteResponse | null>(null);
+  const [quote, setQuote] = useState<any | null>(null);
   const [tradingLoading, setTradingLoading] = useState(false);
 
   useEffect(() => {
@@ -87,24 +89,8 @@ const Dashboard: React.FC = () => {
   };
 
   const handleGetQuote = async () => {
-    if (!selectedToken || !amount) return;
-
-    try {
-      setTradingLoading(true);
-      const quoteData = await transactionApi.getQuote({
-        fromTokenSymbol: 'USDC',
-        fromTokenAddress: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-        toTokenSymbol: selectedToken,
-        toTokenAddress: tokens.find(t => t.symbol === selectedToken)?.address || '',
-        amount: parseFloat(amount),
-        slippage: parseFloat(slippage)
-      });
-      setQuote(quoteData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to get quote');
-    } finally {
-      setTradingLoading(false);
-    }
+    // Quote API not available in current transactionApi; skip or implement later
+    setQuote(null);
   };
 
   const handleBuyToken = async () => {
@@ -112,11 +98,13 @@ const Dashboard: React.FC = () => {
 
     try {
       setTradingLoading(true);
+      // Adapt to current API accepting strings
       await transactionApi.buyToken({
-        tokenSymbol: selectedToken,
-        tokenAddress: tokens.find(t => t.symbol === selectedToken)?.address || '',
-        amount: parseFloat(amount),
-        slippage: parseFloat(slippage)
+        currentTokenPrice: '0',
+        amount: amount,
+        amountInUSD: amount,
+        slippage: slippage,
+        token: tokens.find(t => t.symbol === selectedToken)?.tokenAddress || ''
       });
       
       // Reload data after successful transaction
@@ -231,6 +219,22 @@ const Dashboard: React.FC = () => {
         </Card>
       </div>
 
+      {/* Token Dashboard */}
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Token Overview</h2>
+          <TokenDashboard limit={6} showCharts={true} />
+        </div>
+      </div>
+
+      {/* CoinGecko Integration Demo */}
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold mb-4">🚀 CoinGecko Integration Demo</h2>
+          <CoinGeckoDemo />
+        </div>
+      </div>
+
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Trading Section */}
@@ -251,7 +255,7 @@ const Dashboard: React.FC = () => {
                       {tokens.map((token) => (
                         <SelectItem key={token.symbol} value={token.symbol}>
                           <div className="flex items-center space-x-2">
-                            <img src={token.logoURI} alt={token.name} className="w-4 h-4 rounded-full" />
+                            <img src={token.icon} alt={token.name} className="w-4 h-4 rounded-full" />
                             <span>{token.symbol}</span>
                           </div>
                         </SelectItem>
@@ -336,7 +340,7 @@ const Dashboard: React.FC = () => {
                   return (
                     <div key={token.symbol} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
-                        <img src={token.logoURI} alt={token.name} className="w-6 h-6 rounded-full" />
+                        <img src={token.icon} alt={token.name} className="w-6 h-6 rounded-full" />
                         <div>
                           <div className="font-medium">{token.symbol}</div>
                           <div className="text-sm text-gray-600">{token.name}</div>
@@ -388,17 +392,17 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div>
                     <div className="font-medium capitalize">{transaction.type}</div>
-                    <div className="text-sm text-gray-600">{transaction.tokenSymbol}</div>
+                    <div className="text-sm text-gray-600">{transaction.token?.symbol}</div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-medium">{formatCurrency(transaction.amount)}</div>
+                  <div className="font-medium">{formatCurrency(parseFloat(transaction.amount || '0'))}</div>
                   <div className="text-sm text-gray-600">
                     {new Date(transaction.createdAt).toLocaleDateString()}
                   </div>
                 </div>
                 <Badge variant={
-                  transaction.status === 'completed' ? 'default' :
+                  transaction.status === 'success' ? 'default' :
                   transaction.status === 'pending' ? 'secondary' :
                   transaction.status === 'failed' ? 'destructive' : 'outline'
                 }>

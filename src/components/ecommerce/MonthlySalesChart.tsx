@@ -88,7 +88,7 @@ export default function MonthlySalesChart() {
   const series = [
     {
       name: "Sales",
-      data: [120, 140, 110, 160, 180, 170, 200, 210, 190, 220, 230, 250], // dummy sales data
+      data: [], // Data will be loaded from API
     },
   ];
   const [isOpen, setIsOpen] = useState(false);

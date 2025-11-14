@@ -1,15 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-import axiosInstance from "../../api/axiosConfig";
+import { tokenApi, Token } from "../../api/tokenApi";
 import { PageMeta } from '../../components/common/PageMeta';
 
-interface TokenCronData {
-  _id: string;
-  tokenAddress: string;
-  symbol: string;
-  name: string;
-  graphType: string;
-  grapDataInfo: {
+interface TokenCronData extends Token {
+  graphType?: string;
+  grapDataInfo?: {
     isCronUpdate: boolean;
     isMaxGraphDataAdded: boolean;
     isOneDayGraphDataAdded: boolean;
@@ -24,24 +20,92 @@ export default function TokenCron() {
   const [buttonLoading, setButtonLoading] = useState<Record<string, boolean>>({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteInput, setDeleteInput] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [graphStats, setGraphStats] = useState<{
+    totalTokens: number;
+    tokensWithGraphData: number;
+    lastUpdated: string;
+    cronEnabledTokens: number;
+  } | null>(null);
+
+  // Clear messages after timeout
+  const clearMessages = () => {
+    setTimeout(() => {
+      setSuccessMessage("");
+      setErrorMessage("");
+    }, 5000);
+  };
 
   const fetchTokenDetails = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`/admin/token/${tokenAddress}`);
-      setToken(response.data.body.token);
+      const tokenData = await tokenApi.getByAddress(tokenAddress as string);
+      
+      // Map the token data to include default cron data if not present
+      const tokenCronData: TokenCronData = {
+        ...tokenData,
+        graphType: (tokenData as any).graphType || 'cmc',
+        grapDataInfo: (tokenData as any).grapDataInfo || {
+          isCronUpdate: false,
+          isMaxGraphDataAdded: false,
+          isOneDayGraphDataAdded: false,
+          isFourHourGraphDataAdded: false,
+        }
+      };
+      setToken(tokenCronData);
     } catch (err: any) {
-      console.error(err.response?.data?.message || "Failed to fetch token details");
+      console.error('TokenCron: Error fetching token details:', err);
+      // Set a default token structure on error
+      setToken({
+        _id: '',
+        tokenAddress: tokenAddress || '',
+        symbol: 'Unknown',
+        name: 'Unknown Token',
+        description: '',
+        decimals: 0,
+        icon: '',
+        marketCap: '',
+        holder: '',
+        supply: '',
+        price: '',
+        volume: 0,
+        priceChange24h: '',
+        isActive: false,
+        isSpotlight: false,
+        isHome: false,
+        category: '',
+        createdAt: '',
+        updatedAt: '',
+        isLive: false,
+        graphType: 'cmc',
+        grapDataInfo: {
+          isCronUpdate: false,
+          isMaxGraphDataAdded: false,
+          isOneDayGraphDataAdded: false,
+          isFourHourGraphDataAdded: false,
+        }
+      });
     } finally {
       setLoading(false);
     }
   }, [tokenAddress]);
 
+  const fetchGraphStats = useCallback(async () => {
+    try {
+      const stats = await tokenApi.getGraphStats();
+      setGraphStats(stats);
+    } catch (err: any) {
+      console.error('TokenCron: Error fetching graph stats:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (tokenAddress) {
       fetchTokenDetails();
+      fetchGraphStats();
     }
-  }, [tokenAddress, fetchTokenDetails]);
+  }, [tokenAddress, fetchTokenDetails, fetchGraphStats]);
 
   const handleDeleteData = () => {
     if (!token) return;
@@ -51,11 +115,16 @@ export default function TokenCron() {
   const handleActivateGraph = async () => {
     if (!token) return;
     setButtonLoading(prev => ({ ...prev, activate: true }));
+    setErrorMessage("");
+    setSuccessMessage("");
     try {
-      await axiosInstance.put(`/admin/token/graph/cron/active/${token._id}`);
+      const response = await tokenApi.enableGraphCron(token._id);
+      setSuccessMessage("Graph cron activated successfully!");
+      clearMessages();
       await fetchTokenDetails();
     } catch (err: any) {
-      console.error(err.response?.data?.message || "Failed to activate graph");
+      console.error('TokenCron: Error activating graph:', err);
+      setErrorMessage(err.response?.data?.message || "Failed to activate graph cron");
     } finally {
       setButtonLoading(prev => ({ ...prev, activate: false }));
     }
@@ -64,11 +133,16 @@ export default function TokenCron() {
   const handleLatestGraphData = async () => {
     if (!token) return;
     setButtonLoading(prev => ({ ...prev, latest: true }));
+    setErrorMessage("");
+    setSuccessMessage("");
     try {
-      await axiosInstance.put(`/admin/token/graph/allow/latest/${token._id}`);
+      const response = await tokenApi.populateGraphData(token._id, 7);
+      setSuccessMessage("Historical graph data populated successfully!");
+      clearMessages();
       await fetchTokenDetails();
     } catch (err: any) {
-      console.error(err.response?.data?.message || "Failed to update latest graph data");
+      console.error('TokenCron: Error populating graph data:', err);
+      setErrorMessage(err.response?.data?.message || "Failed to populate graph data");
     } finally {
       setButtonLoading(prev => ({ ...prev, latest: false }));
     }
@@ -78,13 +152,18 @@ export default function TokenCron() {
     if (!token || deleteInput !== "Delete Cron Data") return;
 
     setButtonLoading(prev => ({ ...prev, delete: true }));
+    setErrorMessage("");
+    setSuccessMessage("");
     try {
-      await axiosInstance.delete(`/admin/token/graph/${token._id}`);
+      const response = await tokenApi.deleteGraphData(token._id);
+      setSuccessMessage("Graph data deleted successfully!");
+      clearMessages();
       await fetchTokenDetails();
       setShowDeleteModal(false);
       setDeleteInput("");
     } catch (err: any) {
-      console.error(err.response?.data?.message || "Failed to delete data");
+      console.error('TokenCron: Error deleting graph data:', err);
+      setErrorMessage(err.response?.data?.message || "Failed to delete graph data");
     } finally {
       setButtonLoading(prev => ({ ...prev, delete: false }));
     }
@@ -110,6 +189,30 @@ export default function TokenCron() {
           </Link>
         </div>
 
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4">
+            <div className="flex items-center">
+              <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <p className="text-sm text-green-700">{successMessage}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4">
+            <div className="flex items-center">
+              <svg className="h-5 w-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-red-700">{errorMessage}</p>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           <div className="p-6 border-b border-gray-200">
             <h1 className="text-2xl font-bold">
@@ -126,41 +229,41 @@ export default function TokenCron() {
                   <div className="flex items-center justify-between">
                     <span>Cron Update:</span>
                     <span className={`px-2 py-1 rounded text-sm ${
-                      token.grapDataInfo.isCronUpdate 
+                      token.grapDataInfo?.isCronUpdate 
                         ? "bg-green-100 text-green-800" 
                         : "bg-red-100 text-red-800"
                     }`}>
-                      {token.grapDataInfo.isCronUpdate ? "Active" : "Inactive"}
+                      {token.grapDataInfo?.isCronUpdate ? "Active" : "Inactive"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Max Graph Data:</span>
                     <span className={`px-2 py-1 rounded text-sm ${
-                      token.grapDataInfo.isMaxGraphDataAdded 
+                      token.grapDataInfo?.isMaxGraphDataAdded 
                         ? "bg-green-100 text-green-800" 
                         : "bg-red-100 text-red-800"
                     }`}>
-                      {token.grapDataInfo.isMaxGraphDataAdded ? "Added" : "Pending"}
+                      {token.grapDataInfo?.isMaxGraphDataAdded ? "Added" : "Pending"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>24h Graph Data:</span>
                     <span className={`px-2 py-1 rounded text-sm ${
-                      token.grapDataInfo.isOneDayGraphDataAdded 
+                      token.grapDataInfo?.isOneDayGraphDataAdded 
                         ? "bg-green-100 text-green-800" 
                         : "bg-red-100 text-red-800"
                     }`}>
-                      {token.grapDataInfo.isOneDayGraphDataAdded ? "Added" : "Pending"}
+                      {token.grapDataInfo?.isOneDayGraphDataAdded ? "Added" : "Pending"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>4h Graph Data:</span>
                     <span className={`px-2 py-1 rounded text-sm ${
-                      token.grapDataInfo.isFourHourGraphDataAdded 
+                      token.grapDataInfo?.isFourHourGraphDataAdded 
                         ? "bg-green-100 text-green-800" 
                         : "bg-red-100 text-red-800"
                     }`}>
-                      {token.grapDataInfo.isFourHourGraphDataAdded ? "Added" : "Pending"}
+                      {token.grapDataInfo?.isFourHourGraphDataAdded ? "Added" : "Pending"}
                     </span>
                   </div>
                 </div>
@@ -168,6 +271,37 @@ export default function TokenCron() {
             </div>
           </div>
         </div>
+
+        {/* Graph Statistics */}
+        {graphStats && (
+          <div className="bg-white shadow-lg rounded-lg overflow-hidden mt-6">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold">Graph Data Statistics</h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{graphStats.totalTokens}</div>
+                  <div className="text-sm text-gray-500">Total Tokens</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{graphStats.tokensWithGraphData}</div>
+                  <div className="text-sm text-gray-500">With Graph Data</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">{graphStats.cronEnabledTokens}</div>
+                  <div className="text-sm text-gray-500">Cron Enabled</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-sm font-medium text-gray-900">
+                    {new Date(graphStats.lastUpdated).toLocaleDateString()}
+                  </div>
+                  <div className="text-sm text-gray-500">Last Updated</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="bg-white shadow-lg rounded-lg overflow-hidden mt-6">
           <div className="p-6">
@@ -197,7 +331,7 @@ export default function TokenCron() {
                     </span>
                   ) : "Delete Data"}
                 </span>
-                {token?.grapDataInfo.isMaxGraphDataAdded && (
+                {token?.grapDataInfo?.isMaxGraphDataAdded && (
                   <span className="text-green-500">✓</span>
                 )}
               </button>
@@ -225,7 +359,7 @@ export default function TokenCron() {
                     </span>
                   ) : "Activate Graph"}
                 </span>
-                {token?.grapDataInfo.isOneDayGraphDataAdded && (
+                {token?.grapDataInfo?.isOneDayGraphDataAdded && (
                   <span className="text-green-500">✓</span>
                 )}
               </button>
@@ -249,11 +383,11 @@ export default function TokenCron() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      Updating Latest Graph Data...
+                      Populating Historical Data...
                     </span>
-                  ) : "Latest Graph Data"}
+                  ) : "Populate Historical Data"}
                 </span>
-                {token?.grapDataInfo.isFourHourGraphDataAdded && (
+                {token?.grapDataInfo?.isFourHourGraphDataAdded && (
                   <span className="text-green-500">✓</span>
                 )}
               </button>

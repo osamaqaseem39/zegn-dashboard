@@ -21,16 +21,20 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
- 
   {
-    name: "Users Management",
-    icon: <GroupIcon />,
-    path: "/users",
+    name: "Dashboard",
+    icon: <PieChartIcon />,
+    path: "/dashboard",
   },
   {
-    name: "Categories",
+    name: "Balance",
+    icon: <TableIcon />,
+    path: "/balance",
+  },
+  {
+    name: "Transactions",
     icon: <ListIcon />,
-    path: "/categories",
+    path: "/transactions",
   },
   {
     name: "Tokens",
@@ -46,7 +50,16 @@ const navItems: NavItem[] = [
       { name: "Top Tokens", path: "/market/top-tokens" },
     ],
   },
- 
+  {
+    name: "Users Management",
+    icon: <GroupIcon />,
+    path: "/users",
+  },
+  {
+    name: "Categories",
+    icon: <ListIcon />,
+    path: "/categories",
+  },
 ];
 
 const othersItems: NavItem[] = [

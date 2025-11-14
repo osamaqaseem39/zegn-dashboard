@@ -3,11 +3,16 @@ import { lazy, Suspense } from "react";
 import { AuthProvider } from "./context/AuthContext";
 import AppLayout from "./layout/AppLayout";
 import AuthLayout from "./layout/AuthLayout";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ErrorBoundary from "./components/ErrorBoundary";
+import PageReloadHandler from "./components/PageReloadHandler";
 import NotFound from './pages/NotFound';
 
 // Lazy load components for better code splitting
 const SignIn = lazy(() => import("./pages/AuthPages/SignIn"));
+const EnhancedSignIn = lazy(() => import("./pages/AuthPages/EnhancedSignIn"));
 const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
+const UserDashboard = lazy(() => import("./pages/Dashboard/UserDashboard"));
 const Ecommerce = lazy(() => import("./pages/Dashboard/ECommerce"));
 const UserList = lazy(() => import("./pages/Users/UserList"));
 const UserDetail = lazy(() => import("./pages/Users/UserDetail"));
@@ -22,7 +27,10 @@ const TokenCron = lazy(() => import("./pages/Tokens/TokenCron"));
 const TokenManagementForm = lazy(() => import("./pages/Tokens/TokenManagementForm"));
 const TrendingTokens = lazy(() => import("./pages/Market/TrendingTokens"));
 const TopTokens = lazy(() => import("./pages/Market/TopTokens"));
+const TokenMarket = lazy(() => import("./pages/Market/TokenMarket"));
 const TransactionHistoryForm = lazy(() => import("./pages/Transactions/TransactionHistoryForm"));
+const TransactionManagement = lazy(() => import("./pages/Transactions/TransactionManagement"));
+const BalanceManagement = lazy(() => import("./pages/Balance/BalanceManagement"));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -33,15 +41,25 @@ const LoadingSpinner = () => (
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Suspense fallback={<LoadingSpinner />}>
-          <Routes>
+    <ErrorBoundary>
+      <AuthProvider>
+        <PageReloadHandler>
+          <Router>
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
             {/* Protected Routes */}
-            <Route element={<AppLayout />}>
-              <Route index path="/" element={<Dashboard />} />
-              <Route path="/dashboard" element={<Dashboard />} />
+            <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+              <Route index path="/" element={<UserDashboard />} />
+              <Route path="/dashboard" element={<UserDashboard />} />
+              <Route path="/admin-dashboard" element={<Dashboard />} />
               <Route path="/ecommerce" element={<Ecommerce />} />
+              
+              {/* Balance Management */}
+              <Route path="/balance" element={<BalanceManagement />} />
+              
+              {/* Transaction Management */}
+              <Route path="/transactions" element={<TransactionManagement />} />
+              <Route path="/transactions/history" element={<TransactionHistoryForm />} />
               
               {/* User Management */}
               <Route path="/users" element={<UserList />} />
@@ -65,27 +83,25 @@ export default function App() {
               <Route path="/tokens/manage/new" element={<TokenManagementForm />} />
               <Route path="/tokens/manage/edit/:tokenAddress" element={<TokenManagementForm />} />
               
-              {/* Transaction Management */}
-              <Route path="/transactions" element={<TransactionHistoryForm />} />
-              <Route path="/transactions/history" element={<TransactionHistoryForm />} />
-              
               {/* Market Analysis */}
-              <Route path="/market">
-                <Route path="trending-tokens" element={<TrendingTokens />} />
-                <Route path="top-tokens" element={<TopTokens />} />
-              </Route>
+              <Route path="/market" element={<TokenMarket />} />
+              <Route path="/market/trending-tokens" element={<TrendingTokens />} />
+              <Route path="/market/top-tokens" element={<TopTokens />} />
             </Route>
             
             {/* Auth Routes */}
             <Route element={<AuthLayout />}>
-              <Route path="/signin" element={<SignIn />} />
+              <Route path="/signin" element={<EnhancedSignIn />} />
+              <Route path="/login" element={<EnhancedSignIn />} />
             </Route>
             
             {/* Add this at the very bottom of your Routes */}
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </Router>
-    </AuthProvider>
+              </Routes>
+            </Suspense>
+          </Router>
+        </PageReloadHandler>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

@@ -105,11 +105,11 @@ export default function StatisticsChart() {
   const series = [
     {
       name: "Sales",
-      data: [120, 140, 110, 160, 180, 170, 200, 210, 190, 220, 230, 250], // dummy sales data
+      data: [], // Data will be loaded from API
     },
     {
       name: "Revenue",
-      data: [2400, 2800, 2200, 3200, 3600, 3400, 4000, 4200, 3800, 4400, 4600, 5000], // dummy revenue data
+      data: [], // Data will be loaded from API
     },
   ];
   return (

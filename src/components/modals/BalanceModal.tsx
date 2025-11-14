@@ -15,6 +15,7 @@ interface Balance {
   totalHoldingBalance: string;
   tokenAccounts: TokenAccount[];
   holdings: Holding[];
+  error?: string; // Optional error message when balance cannot be fetched
 }
 
 interface BalanceModalProps {
@@ -60,6 +61,11 @@ export default function BalanceModal({ isOpen, onClose, balance, loading, error 
           <div className="text-red-600 py-2">{error}</div>
         ) : balance ? (
           <div className="space-y-4">
+            {balance.error && (
+              <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-3 py-2 rounded-md mb-4">
+                <span className="font-medium">Note:</span> {balance.error}
+              </div>
+            )}
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="text-center mb-4">
                 <div className="text-sm text-gray-600">Total Balance</div>

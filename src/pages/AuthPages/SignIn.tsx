@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { authApi } from '../../api/authApi';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -10,6 +11,7 @@ const SignIn: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -21,11 +23,37 @@ const SignIn: React.FC = () => {
 
     try {
       await login({ email, password });
-      navigate('/');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      // Navigate to dashboard after successful login
+      navigate('/dashboard');
+    } catch (err: any) {
+      console.error('Login failed:', err);
+      setError(err.response?.data?.message || err.message || 'Login failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateAdmin = async () => {
+    setCreatingAdmin(true);
+    setError('');
+    
+    try {
+      console.log('Creating admin user...');
+      const adminData = {
+        email: 'admin@zegn.com',
+        password: 'Admin123!@#',
+        userName: 'System Administrator',
+        role: 'admin'
+      };
+      
+      const response = await authApi.createTestAdmin(adminData);
+      console.log('Admin created:', response);
+      setError('Admin user created successfully! You can now log in.');
+    } catch (err: any) {
+      console.error('Create admin failed:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to create admin user');
+    } finally {
+      setCreatingAdmin(false);
     }
   };
 
@@ -85,13 +113,23 @@ const SignIn: React.FC = () => {
                 />
               </div>
 
-              <div>
+              <div className="space-y-3">
                 <Button
                   type="submit"
                   disabled={loading}
                   className="w-full"
                 >
                   {loading ? 'Signing in...' : 'Sign in'}
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={creatingAdmin}
+                  onClick={handleCreateAdmin}
+                  className="w-full"
+                >
+                  {creatingAdmin ? 'Creating Admin...' : 'Create Admin User'}
                 </Button>
               </div>
             </form>

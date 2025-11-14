@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -16,7 +18,7 @@ export default function UserDropdown() {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    logout();
     navigate('/signin', { replace: true });
     closeDropdown();
   };
@@ -31,7 +33,9 @@ export default function UserDropdown() {
           <img src="/images/user/owner.jpg" alt="User" />
         </span>
 
-        <span className="block mr-1 font-medium text-theme-sm">Noman</span>
+        <span className="block mr-1 font-medium text-theme-sm">
+          {user?.userName || user?.email || 'User'}
+        </span>
 
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${

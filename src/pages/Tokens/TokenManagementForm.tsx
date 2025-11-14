@@ -6,6 +6,7 @@ import Select from '../../components/form/input/SelectField';
 import TextArea from '../../components/form/input/TextArea';
 import Checkbox from '../../components/form/input/Checkbox';
 import { tokenApi, Token } from '../../api/tokenApi';
+import { solscanApiService, SolscanTokenMetadata } from '../../api/solscanApi';
 import { Coins, Link, Globe, Shield, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -68,43 +69,62 @@ const TokenManagementForm: React.FC = () => {
   const loadTokenData = async () => {
     try {
       setLoading(true);
-      // In a real app, you'd have an API endpoint to get token details
-      // For now, we'll simulate with mock data
-      const mockToken: Token = {
-        symbol: 'SOL',
-        name: 'Solana',
-        address: tokenAddress || '',
-        decimals: 9,
-        logoURI: 'https://cryptologos.cc/logos/solana-sol-logo.png',
-      };
       
-      setToken(mockToken);
-      
-      // Populate form with token data
-      setFormData({
-        symbol: mockToken.symbol,
-        name: mockToken.name,
-        address: mockToken.address,
-        decimals: mockToken.decimals,
-        logoURI: mockToken.logoURI,
-        description: 'Solana is a high-performance blockchain platform.',
-        website: 'https://solana.com',
-        twitter: 'https://twitter.com/solana',
-        telegram: 'https://t.me/solana',
-        discord: 'https://discord.gg/solana',
-        isActive: true,
-        isVerified: true,
-        category: 'cryptocurrency',
-        tags: ['blockchain', 'defi', 'smart-contracts'],
-        metadata: {
-          marketCap: 50000000000,
-          volume24h: 2000000000,
-          circulatingSupply: 400000000,
-          totalSupply: 500000000,
-        },
-      });
+      if (tokenAddress) {
+        // Fetch token metadata from Solscan API
+        const metadata = await solscanApiService.getTokenMetadata(tokenAddress);
+        
+        const tokenData: Token = {
+          _id: '',
+          symbol: metadata.symbol,
+          name: metadata.metadata?.name || metadata.symbol,
+          tokenAddress: metadata.address,
+          description: metadata.description || '',
+          decimals: metadata.decimals,
+          icon: metadata.metadata?.image || '',
+          marketCap: '',
+          holder: '',
+          supply: '',
+          price: '',
+          volume: 0,
+          priceChange24h: '',
+          isActive: true,
+          isSpotlight: false,
+          isHome: false,
+          category: '',
+          createdAt: '',
+          updatedAt: '',
+          isLive: true,
+        };
+        
+        setToken(tokenData);
+        
+        // Populate form with Solscan data
+        setFormData({
+          symbol: metadata.symbol,
+          name: metadata.metadata?.name || metadata.symbol,
+          address: metadata.address,
+          decimals: metadata.decimals,
+          logoURI: metadata.metadata?.image || '',
+          description: metadata.description || metadata.metadata?.description || '',
+          website: metadata.website || '',
+          twitter: metadata.twitter || '',
+          telegram: '',
+          discord: '',
+          isActive: true,
+          isVerified: true,
+          category: 'cryptocurrency',
+          tags: ['blockchain'],
+          metadata: {
+            marketCap: metadata.market_cap || 0,
+            volume24h: metadata.volume_24h || 0,
+            circulatingSupply: metadata.holder || 0,
+            totalSupply: metadata.supply ? Number(metadata.supply) : 0,
+          },
+        });
+      }
     } catch (error) {
-      console.error('Failed to load token data:', error);
+      console.error('Failed to load token data from Solscan:', error);
     } finally {
       setLoading(false);
     }
