@@ -1,13 +1,17 @@
 import axios from 'axios';
 
-export const axiosConfig = {
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/v1';
+
+// Create axios instance
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-};
+});
 
 // Add request interceptor for auth token if needed
-axios.interceptors.request.use(
+axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -21,7 +25,7 @@ axios.interceptors.request.use(
 );
 
 // Add response interceptor for error handling
-axios.interceptors.response.use(
+axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
@@ -31,3 +35,11 @@ axios.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export const axiosConfig = {
+  headers: {
+    'Content-Type': 'application/json',
+  },
+};
+
+export default axiosInstance;
