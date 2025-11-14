@@ -37,13 +37,7 @@ const SignIn: React.FC = () => {
             Sign in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link
-              to="/signup"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              create a new account
-            </Link>
+            Enter your admin credentials to access the dashboard
           </p>
         </div>
         

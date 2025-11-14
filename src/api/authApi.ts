@@ -1,81 +1,54 @@
-import axiosInstance from './axiosConfig';
+import axios from 'axios';
+import { axiosConfig } from './axiosConfig';
 
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/v1';
 
 export interface RegisterRequest {
   email: string;
-  password: string;
-  firstName?: string;
-  lastName?: string;
-}
-
-export interface UserProfile {
-  id: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  profilePicture?: string;
-  balance: number;
-  isEmailVerified: boolean;
   referralCode?: string;
-  createdAt: string;
 }
 
-export interface LoginResponse {
+export interface VerifyRequest {
+  email: string;
+  otp: string;
+}
+
+export interface RegisterResponse {
   message: string;
+}
+
+export interface VerifyResponse {
   token: string;
-  user: UserProfile;
 }
 
 export const authApi = {
-  // Login user
-  login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    const response = await axiosInstance.post('/auth/login', credentials);
+  // Connect account (send OTP)
+  connectAccount: async (data: RegisterRequest): Promise<RegisterResponse> => {
+    const response = await axios.post(
+      `${API_BASE_URL}/account/connect`,
+      data,
+      axiosConfig
+    );
     return response.data;
   },
 
-  // Register user
-  register: async (userData: RegisterRequest): Promise<LoginResponse> => {
-    const response = await axiosInstance.post('/auth/register', userData);
+  // Verify account (verify OTP and get token)
+  verifyAccount: async (data: VerifyRequest): Promise<VerifyResponse> => {
+    const response = await axios.post(
+      `${API_BASE_URL}/account/verify`,
+      data,
+      axiosConfig
+    );
     return response.data;
   },
 
-  // Get user profile
-  getProfile: async (): Promise<UserProfile> => {
-    const response = await axiosInstance.get('/auth/profile');
+  // Resend OTP
+  resendOtp: async (email: string): Promise<RegisterResponse> => {
+    const response = await axios.put(
+      `${API_BASE_URL}/account/resend/otp`,
+      { email },
+      axiosConfig
+    );
     return response.data;
   },
-
-  // Update user profile
-  updateProfile: async (profileData: Partial<UserProfile>): Promise<UserProfile> => {
-    const response = await axiosInstance.put('/auth/profile', profileData);
-    return response.data;
-  },
-
-  // Get user balance
-  getBalance: async (): Promise<{ balance: number }> => {
-    const response = await axiosInstance.get('/auth/balance');
-    return response.data;
-  },
-
-  // Forgot password
-  forgotPassword: async (email: string): Promise<{ message: string }> => {
-    const response = await axiosInstance.post('/auth/forgot-password', { email });
-    return response.data;
-  },
-
-  // Reset password
-  resetPassword: async (token: string, newPassword: string): Promise<{ message: string }> => {
-    const response = await axiosInstance.post('/auth/reset-password', { token, newPassword });
-    return response.data;
-  },
-
-  // Verify email
-  verifyEmail: async (token: string): Promise<{ message: string }> => {
-    const response = await axiosInstance.post('/auth/verify-email', { token });
-    return response.data;
-  },
-}; 
+};

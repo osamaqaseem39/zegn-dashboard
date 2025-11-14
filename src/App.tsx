@@ -7,12 +7,12 @@ import NotFound from './pages/NotFound';
 
 // Lazy load components for better code splitting
 const SignIn = lazy(() => import("./pages/AuthPages/SignIn"));
-const SignUp = lazy(() => import("./pages/AuthPages/SignUp"));
 const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
 const Ecommerce = lazy(() => import("./pages/Dashboard/ECommerce"));
 const UserList = lazy(() => import("./pages/Users/UserList"));
 const UserDetail = lazy(() => import("./pages/Users/UserDetail"));
 const UserProfileForm = lazy(() => import("./pages/Users/UserProfileForm"));
+const CreateAdmin = lazy(() => import("./pages/Users/CreateAdmin"));
 const CategoryList = lazy(() => import("./pages/Categories/CategoryList"));
 const CategoryForm = lazy(() => import("./pages/Categories/CategoryForm"));
 const TokenList = lazy(() => import("./pages/Tokens/TokenList"));
@@ -48,6 +48,7 @@ export default function App() {
               <Route path="/users/:userId" element={<UserDetail />} />
               <Route path="/users/profile/new" element={<UserProfileForm />} />
               <Route path="/users/profile/edit/:userId" element={<UserProfileForm />} />
+              <Route path="/users/create-admin" element={<CreateAdmin />} />
               
               {/* Category Management */}
               <Route path="/categories" element={<CategoryList />} />
@@ -78,7 +79,6 @@ export default function App() {
             {/* Auth Routes */}
             <Route element={<AuthLayout />}>
               <Route path="/signin" element={<SignIn />} />
-              <Route path="/signup" element={<SignUp />} />
             </Route>
             
             {/* Add this at the very bottom of your Routes */}

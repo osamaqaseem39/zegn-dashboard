@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import axiosInstance from "../../api/axiosConfig";
 import Input from "../../components/form/input/InputField";
 import BalanceModal from "../../components/modals/BalanceModal";
+import { Button } from "../../components/ui/button";
+import { Shield, UserPlus } from "lucide-react";
 
 interface User {
   _id: string;
@@ -168,12 +170,20 @@ export default function UserList() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Users</h1>
-        <Link 
-          to="/users/add" 
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-        >
-          Add New User
-        </Link>
+        <div className="flex space-x-3">
+          <Link to="/users/create-admin">
+            <Button variant="outline" className="flex items-center space-x-2">
+              <Shield className="h-4 w-4" />
+              <span>Create Admin</span>
+            </Button>
+          </Link>
+          <Link to="/users/profile/new">
+            <Button className="flex items-center space-x-2">
+              <UserPlus className="h-4 w-4" />
+              <span>Add User</span>
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="mb-4">

@@ -1,22 +1,281 @@
 import React, { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router-dom";
 import GridShape from "../../components/common/GridShape";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Checkbox from "../../components/form/input/Checkbox";
 import PageMeta from "../../components/common/PageMeta";
+import { authApi } from "../../api/authApi";
 
 export default function SignUp() {
+  const navigate = useNavigate();
+  const [step, setStep] = useState<'form' | 'otp'>('form');
   const [isChecked, setIsChecked] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  
+  // Form fields
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    referralCode: '',
+  });
+  
+  // OTP field
+  const [otp, setOtp] = useState('');
   
   const handleCheckboxChange = (value: boolean | React.ChangeEvent<HTMLInputElement>) => {
     if (typeof value === 'boolean') {
+      setIsChecked(value);
       return value;
     }
+    setIsChecked(value.target.checked);
     return value.target.checked;
   };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    setError('');
+  };
+
+  const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setOtp(e.target.value);
+    setError('');
+  };
+
+  const validateForm = () => {
+    if (!formData.firstName.trim()) {
+      setError('First name is required');
+      return false;
+    }
+    if (!formData.lastName.trim()) {
+      setError('Last name is required');
+      return false;
+    }
+    if (!formData.email.trim()) {
+      setError('Email is required');
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+    if (!formData.password.trim()) {
+      setError('Password is required');
+      return false;
+    }
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return false;
+    }
+    if (!isChecked) {
+      setError('Please agree to the Terms and Conditions');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Step 1: Connect account (send OTP)
+      await authApi.connectAccount({
+        email: formData.email,
+        referralCode: formData.referralCode || undefined,
+      });
+      
+      setSuccess('OTP has been sent to your email. Please check your inbox.');
+      setStep('otp');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to send OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!otp.trim()) {
+      setError('Please enter the OTP');
+      return;
+    }
+
+    if (otp.length !== 6) {
+      setError('OTP must be 6 digits');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Step 2: Verify OTP and get token
+      const response = await authApi.verifyAccount({
+        email: formData.email,
+        otp: otp.trim(),
+      });
+      
+      // Store token
+      if (response.token) {
+        localStorage.setItem('token', response.token);
+      }
+      
+      setSuccess('Account created successfully! Redirecting to sign in...');
+      
+      // Redirect to sign in page after 2 seconds
+      setTimeout(() => {
+        navigate('/signin');
+      }, 2000);
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Invalid OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await authApi.resendOtp(formData.email);
+      setSuccess('OTP has been resent to your email.');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to resend OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (step === 'otp') {
+    return (
+      <>
+        <PageMeta
+          title="Verify OTP | ZEGN Dashboard"
+          description="Verify your account with the OTP sent to your email"
+        />
+        <div className="relative flex w-full h-screen overflow-hidden bg-white z-1 dark:bg-gray-900">
+          <div className="flex flex-col flex-1 p-6 rounded-2xl sm:rounded-none sm:border-0 sm:p-8">
+            <div className="w-full max-w-md pt-5 mx-auto sm:py-10">
+              <Link
+                to="/"
+                className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              >
+                <svg
+                  className="stroke-current"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                >
+                  <path
+                    d="M12.7083 5L7.5 10.2083L12.7083 15.4167"
+                    stroke=""
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Back to dashboard
+              </Link>
+            </div>
+            <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
+              <div className="mb-5 sm:mb-8">
+                <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
+                  Verify Your Email
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Enter the 6-digit OTP sent to {formData.email}
+                </p>
+              </div>
+              
+              {error && (
+                <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+                  {error}
+                </div>
+              )}
+              
+              {success && (
+                <div className="mb-4 p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+                  {success}
+                </div>
+              )}
+
+              <form onSubmit={handleVerifyOtp}>
+                <div className="space-y-5">
+                  <div>
+                    <Label>
+                      OTP<span className="text-error-500">*</span>
+                    </Label>
+                    <Input
+                      type="text"
+                      id="otp"
+                      name="otp"
+                      placeholder="Enter 6-digit OTP"
+                      value={otp}
+                      onChange={handleOtpChange}
+                      maxLength={6}
+                      pattern="[0-9]{6}"
+                    />
+                  </div>
+                  
+                  <div>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? 'Verifying...' : 'Verify OTP'}
+                    </button>
+                  </div>
+                  
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={loading}
+                      className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400 disabled:opacity-50"
+                    >
+                      Resend OTP
+                    </button>
+                  </div>
+                  
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setStep('form')}
+                      className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                    >
+                      Back to sign up
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <PageMeta
@@ -58,9 +317,25 @@ export default function SignUp() {
                 Enter your email and password to sign up!
               </p>
             </div>
+            
+            {error && (
+              <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+                {error}
+              </div>
+            )}
+            
+            {success && (
+              <div className="mb-4 p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+                {success}
+              </div>
+            )}
+
             <div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
-                <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
+                <button 
+                  type="button"
+                  className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10"
+                >
                   <svg
                     width="20"
                     height="20"
@@ -87,7 +362,10 @@ export default function SignUp() {
                   </svg>
                   Sign up with Google
                 </button>
-                <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
+                <button 
+                  type="button"
+                  className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10"
+                >
                   <svg
                     width="21"
                     className="fill-current"
@@ -111,37 +389,40 @@ export default function SignUp() {
                   </span>
                 </div>
               </div>
-              <form>
+              <form onSubmit={handleSubmit}>
                 <div className="space-y-5">
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    {/* <!-- First Name --> */}
                     <div className="sm:col-span-1">
-                      <Label>
+                      <Label htmlFor="firstName">
                         First Name<span className="text-error-500">*</span>
                       </Label>
                       <Input
                         type="text"
-                        id="fname"
-                        name="fname"
+                        id="firstName"
+                        name="firstName"
                         placeholder="Enter your first name"
+                        value={formData.firstName}
+                        onChange={handleInputChange}
+                        required
                       />
                     </div>
-                    {/* <!-- Last Name --> */}
                     <div className="sm:col-span-1">
-                      <Label>
+                      <Label htmlFor="lastName">
                         Last Name<span className="text-error-500">*</span>
                       </Label>
                       <Input
                         type="text"
-                        id="lname"
-                        name="lname"
+                        id="lastName"
+                        name="lastName"
                         placeholder="Enter your last name"
+                        value={formData.lastName}
+                        onChange={handleInputChange}
+                        required
                       />
                     </div>
                   </div>
-                  {/* <!-- Email --> */}
                   <div>
-                    <Label>
+                    <Label htmlFor="email">
                       Email<span className="text-error-500">*</span>
                     </Label>
                     <Input
@@ -149,17 +430,24 @@ export default function SignUp() {
                       id="email"
                       name="email"
                       placeholder="Enter your email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
                     />
                   </div>
-                  {/* <!-- Password --> */}
                   <div>
-                    <Label>
+                    <Label htmlFor="password">
                       Password<span className="text-error-500">*</span>
                     </Label>
                     <div className="relative">
                       <Input
+                        id="password"
+                        name="password"
                         placeholder="Enter your password"
                         type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        required
                       />
                       <span
                         onClick={() => setShowPassword(!showPassword)}
@@ -173,14 +461,26 @@ export default function SignUp() {
                       </span>
                     </div>
                   </div>
-                  {/* <!-- Checkbox --> */}
+                  <div>
+                    <Label htmlFor="referralCode">
+                      Referral Code (Optional)
+                    </Label>
+                    <Input
+                      type="text"
+                      id="referralCode"
+                      name="referralCode"
+                      placeholder="Enter referral code"
+                      value={formData.referralCode}
+                      onChange={handleInputChange}
+                    />
+                  </div>
                   <div className="flex items-center gap-3">
                     <Checkbox
                       className="w-5 h-5"
                       checked={isChecked}
                       onChange={(value) => setIsChecked(handleCheckboxChange(value))}
                     />
-                    <p className="inline-block font-normal text-gray-500 dark:text-gray-400">
+                    <p className="inline-block font-normal text-sm text-gray-500 dark:text-gray-400">
                       By creating an account means you agree to the{" "}
                       <span className="text-gray-800 dark:text-white/90">
                         Terms and Conditions,
@@ -191,19 +491,22 @@ export default function SignUp() {
                       </span>
                     </p>
                   </div>
-                  {/* <!-- Button --> */}
                   <div>
-                    <button className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600">
-                      Sign Up
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? 'Sending OTP...' : 'Sign Up'}
                     </button>
                   </div>
                 </div>
               </form>
               <div className="mt-5">
                 <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
-                  Already have an account?
+                  Already have an account?{" "}
                   <Link
-                    to="/signin.html"
+                    to="/signin"
                     className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
                   >
                     Sign In
@@ -214,11 +517,9 @@ export default function SignUp() {
           </div>
         </div>
         <div className="relative items-center justify-center flex-1 hidden p-8 z-1 bg-brand-950 dark:bg-white/5 lg:flex">
-          {/* <!-- ===== Common Grid Shape Start ===== --> */}
           <GridShape />
-          {/* <!-- ===== Common Grid Shape End ===== --> */}
           <div className="flex flex-col items-center max-w-xs">
-            <Link to="index.html" className="block mb-4">
+            <Link to="/" className="block mb-4">
               <img src="./images/logo/auth-logo.svg" alt="Logo" />
             </Link>
             <p className="text-center text-gray-400 dark:text-white/60">
@@ -230,3 +531,4 @@ export default function SignUp() {
     </>
   );
 }
+
