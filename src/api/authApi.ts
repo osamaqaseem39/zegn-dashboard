@@ -21,6 +21,21 @@ export interface VerifyResponse {
   token: string;
 }
 
+export interface CreateAdminRequest {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface CreateAdminResponse {
+  message: string;
+  admin: {
+    email: string;
+  };
+  token?: string;
+}
+
 export const authApi = {
   // Connect account (send OTP)
   connectAccount: async (data: RegisterRequest): Promise<RegisterResponse> => {
@@ -47,6 +62,16 @@ export const authApi = {
     const response = await axios.put(
       `${API_BASE_URL}/account/resend/otp`,
       { email },
+      axiosConfig
+    );
+    return response.data;
+  },
+
+  // Create admin user
+  createAdmin: async (data: CreateAdminRequest): Promise<CreateAdminResponse> => {
+    const response = await axios.post(
+      `${API_BASE_URL}/admin/user/create`,
+      data,
       axiosConfig
     );
     return response.data;
