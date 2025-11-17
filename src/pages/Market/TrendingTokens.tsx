@@ -26,10 +26,13 @@ export default function TrendingTokens() {
       const response = await tokenApi.getTrendingTokens();
       console.log("Trending tokens response:", response);
       
-      if (response.success && response.data) {
-        setTokens(response.data);
+      const responseData = (response as any)?.data ?? response;
+      if (responseData.success && responseData.data) {
+        setTokens(responseData.data);
+      } else if (Array.isArray(responseData)) {
+        setTokens(responseData);
       } else {
-        setError(response.message || "Failed to fetch trending tokens");
+        setError(responseData.message || "Failed to fetch trending tokens");
         setTokens([]);
       }
     } catch (err: any) {

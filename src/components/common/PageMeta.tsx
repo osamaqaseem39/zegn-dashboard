@@ -1,5 +1,5 @@
 import React from "react";
-import { Helmet } from "react-helmet-async";
+import { Helmet, HelmetProvider } from "react-helmet-async";
 
 interface PageMetaProps {
   title: string;
@@ -13,6 +13,10 @@ const PageMeta: React.FC<PageMetaProps> = ({ title, description }) => {
       <meta name="description" content={description} />
     </Helmet>
   );
+};
+
+export const AppWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return <HelmetProvider>{children}</HelmetProvider>;
 };
 
 export default PageMeta;

@@ -129,7 +129,8 @@ export const tokenApi = {
   getTokenPrices: async (symbols?: string[]): Promise<TokenPricesResponse> => {
     const params = symbols && symbols.length > 0 ? `?symbols=${symbols.join(',')}` : '';
     const res = await axiosInstance.get(`/tokens/prices${params}`);
-    return res as TokenPricesResponse;
+    const data = (res as any)?.data ?? res;
+    return data as unknown as TokenPricesResponse;
   },
 
   // Get trending tokens
@@ -159,13 +160,15 @@ export const tokenApi = {
   // Create a new token
   create: async (tokenData: CreateTokenRequest): Promise<Token> => {
     const res = await axiosInstance.post('/admin/token/create', tokenData);
-    return res as Token;
+    const data = (res as any)?.data?.token ?? (res as any)?.data;
+    return data as unknown as Token;
   },
 
   // Update token by ID
   update: async (id: string, tokenData: UpdateTokenRequest): Promise<Token> => {
     const res = await axiosInstance.put(`/admin/token/update/${id}`, tokenData);
-    return res as Token;
+    const data = (res as any)?.data?.token ?? (res as any)?.data;
+    return data as unknown as Token;
   },
 
   // Get all tokens with filters (admin)
@@ -183,25 +186,29 @@ export const tokenApi = {
   // Toggle token active status by address
   toggleActive: async (address: string): Promise<Token> => {
     const res = await axiosInstance.put(`/admin/token/active/${address}`);
-    return res as Token;
+    const data = (res as any)?.data?.token ?? (res as any)?.data;
+    return data as unknown as Token;
   },
 
   // Toggle token spotlight status by address
   toggleSpotlight: async (address: string): Promise<Token> => {
     const res = await axiosInstance.put(`/admin/token/spotlight/${address}`);
-    return res as Token;
+    const data = (res as any)?.data?.token ?? (res as any)?.data;
+    return data as unknown as Token;
   },
 
   // Toggle token live status by address
   toggleLive: async (address: string): Promise<Token> => {
     const res = await axiosInstance.put(`/admin/token/live/${address}`);
-    return res as Token;
+    const data = (res as any)?.data?.token ?? (res as any)?.data;
+    return data as unknown as Token;
   },
 
   // Toggle token home status by address
   toggleHome: async (address: string): Promise<Token> => {
     const res = await axiosInstance.put(`/admin/token/home/${address}`);
-    return res as Token;
+    const data = (res as any)?.data?.token ?? (res as any)?.data;
+    return data as unknown as Token;
   },
 
   // Activate token graph cron data by ID
@@ -269,7 +276,8 @@ export const tokenApi = {
   // Get token by ID (for public API)
   getTokenById: async (id: string): Promise<Token> => {
     const res = await axiosInstance.get(`/token/${id}`);
-    return res as Token;
+    const data = (res as any)?.data?.token ?? (res as any)?.data;
+    return data as unknown as Token;
   },
 
   // Backward compatibility aliases

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { tokenApi } from "../../api/tokenApi";
 import Input from "../../components/form/input/InputField";
-import { PageMeta } from '../../components/common/PageMeta';
+import PageMeta from '../../components/common/PageMeta';
 import { useAuth } from '../../context/AuthContext';
 import ErrorHandler from '../../utils/errorHandler';
 

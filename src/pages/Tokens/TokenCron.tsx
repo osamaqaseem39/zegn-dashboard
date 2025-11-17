@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { tokenApi, Token } from "../../api/tokenApi";
-import { PageMeta } from '../../components/common/PageMeta';
+import PageMeta from '../../components/common/PageMeta';
 
 interface TokenCronData extends Token {
   graphType?: string;

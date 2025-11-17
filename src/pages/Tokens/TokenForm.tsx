@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom"
 import axiosInstance from "../../api/axiosConfig";
 import { tokenApi } from "../../api/tokenApi";
 import { solscanApiService, SolscanTokenMetadata } from "../../api/solscanApi";
-import { PageMeta } from '../../components/common/PageMeta';
+import PageMeta from '../../components/common/PageMeta';
 
 interface SocialUrls {
   web?: string;

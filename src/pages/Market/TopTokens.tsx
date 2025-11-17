@@ -26,10 +26,15 @@ export default function TopTokens() {
       const response = await tokenApi.getTopTokens();
       console.log("Top tokens response:", response);
       
-      if (response.success && response.data && response.data.items) {
-        setTokens(response.data.items);
+      const responseData = (response as any)?.data ?? response;
+      if (responseData.success && responseData.data && responseData.data.items) {
+        setTokens(responseData.data.items);
+      } else if (Array.isArray(responseData)) {
+        setTokens(responseData);
+      } else if (responseData.items && Array.isArray(responseData.items)) {
+        setTokens(responseData.items);
       } else {
-        setError(response.message || "Failed to fetch top tokens");
+        setError(responseData.message || "Failed to fetch top tokens");
         setTokens([]);
       }
     } catch (err: any) {

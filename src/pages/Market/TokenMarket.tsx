@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { PageMeta } from '../../components/common/PageMeta';
+import PageMeta from '../../components/common/PageMeta';
 import TokenDashboard from '../../components/tokens/TokenDashboard';
 import { tokenApi, Token } from '../../api/tokenApi';
 import { useAuth } from '../../context/AuthContext';
