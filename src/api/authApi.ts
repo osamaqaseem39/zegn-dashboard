@@ -46,8 +46,30 @@ export interface UserProfile {
   email: string;
   role: string;
   id?: string;
+  _id?: string;
   firstName?: string;
   lastName?: string;
+  userName?: string;
+  referralCode?: string;
+  balance?: string | number;
+  isEmailVerified?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  isActive?: boolean;
+  profileUrl?: string;
+  phone?: string;
+  address?: string;
+  dateOfBirth?: string;
+  bio?: string;
+  preferences?: {
+    language?: string;
+    timezone?: string;
+    currency?: string;
+  };
+  isEnableNotification?: boolean;
+  exportVerificationInfo?: any;
+  walletInfo?: any;
+  verificationInfo?: any;
 }
 
 export interface LoginResponse {
@@ -226,5 +248,85 @@ export const authApi = {
       axiosConfig
     );
     return response.data;
+  },
+
+  // Create test admin (optional data parameter for compatibility)
+  createTestAdmin: async (data?: CreateAdminRequest): Promise<CreateAdminResponse> => {
+    const response = await axios.post(
+      `${API_BASE_URL}/admin/user/create-test-admin`,
+      data || {},
+      axiosConfig
+    );
+    
+    // Handle nested response structure
+    if (response.data.status && response.data.body) {
+      return response.data.body;
+    }
+    return response.data;
+  },
+
+  // Get all users (admin only)
+  getUsers: async (params?: { limit?: number; offset?: number }): Promise<{ users: UserProfile[]; total?: number }> => {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.offset) queryParams.append('offset', params.offset.toString());
+    
+    const queryString = queryParams.toString();
+    const url = `${API_BASE_URL}/admin/user/list${queryString ? `?${queryString}` : ''}`;
+    
+    const response = await axiosInstance.get(url);
+    
+    // Handle nested response structure
+    if (response.data.status && response.data.body) {
+      return {
+        users: response.data.body.users || response.data.body.data || [],
+        total: response.data.body.total,
+      };
+    }
+    
+    return {
+      users: response.data.users || response.data.data || [],
+      total: response.data.total,
+    };
+  },
+
+  // Get user by ID (admin only)
+  getUserById: async (userId: string): Promise<UserProfile> => {
+    const response = await axiosInstance.get(`/admin/user/findOne/${userId}`);
+    
+    // Handle nested response structure
+    if (response.data.status && response.data.body) {
+      return response.data.body.user || response.data.body;
+    }
+    return response.data.user || response.data;
+  },
+
+  // Get user balance (admin only)
+  getUserBalance: async (userId: string): Promise<{ balance: string | number; data?: any }> => {
+    const response = await axiosInstance.get(`/admin/user/balance/${userId}`);
+    
+    // Handle nested response structure
+    if (response.data.status && response.data.body) {
+      return {
+        balance: response.data.body.balance || response.data.body.data?.balance || 0,
+        data: response.data.body,
+      };
+    }
+    
+    return {
+      balance: response.data.balance || response.data.data?.balance || 0,
+      data: response.data,
+    };
+  },
+
+  // Update user profile
+  updateProfile: async (data: Partial<UserProfile>): Promise<UserProfile> => {
+    const response = await axiosInstance.put('/user/me', data);
+    
+    // Handle nested response structure
+    if (response.data.status && response.data.body) {
+      return response.data.body.user || response.data.body;
+    }
+    return response.data.user || response.data;
   },
 };
