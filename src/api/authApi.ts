@@ -251,7 +251,7 @@ export const authApi = {
   },
 
   // Create test admin (optional data parameter for compatibility)
-  createTestAdmin: async (data?: CreateAdminRequest): Promise<CreateAdminResponse> => {
+  createTestAdmin: async (data?: CreateAdminRequest | any): Promise<CreateAdminResponse> => {
     const response = await axios.post(
       `${API_BASE_URL}/admin/user/create-test-admin`,
       data || {},
@@ -302,7 +302,7 @@ export const authApi = {
   },
 
   // Get user balance (admin only)
-  getUserBalance: async (userId: string): Promise<{ balance: string | number; data?: any }> => {
+  getUserBalance: async (userId: string): Promise<{ balance: string | number; data?: any; body?: any }> => {
     const response = await axiosInstance.get(`/admin/user/balance/${userId}`);
     
     // Handle nested response structure
@@ -310,12 +310,14 @@ export const authApi = {
       return {
         balance: response.data.body.balance || response.data.body.data?.balance || 0,
         data: response.data.body,
+        body: response.data.body,
       };
     }
     
     return {
       balance: response.data.balance || response.data.data?.balance || 0,
       data: response.data,
+      body: response.data,
     };
   },
 

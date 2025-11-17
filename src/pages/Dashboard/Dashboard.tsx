@@ -167,7 +167,7 @@ const Dashboard: React.FC = () => {
         <div className="flex items-center space-x-4">
           <Badge variant="outline" className="flex items-center space-x-2">
             <Wallet className="h-4 w-4" />
-            <span>{formatCurrency(user?.balance || 0)}</span>
+            <span>{formatCurrency(typeof user?.balance === 'number' ? user.balance : parseFloat(String(user?.balance || 0)))}</span>
           </Badge>
         </div>
       </div>
@@ -180,7 +180,7 @@ const Dashboard: React.FC = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(user?.balance || 0)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(typeof user?.balance === 'number' ? user.balance : parseFloat(String(user?.balance || 0)))}</div>
             <p className="text-xs text-muted-foreground">Available for trading</p>
           </CardContent>
         </Card>

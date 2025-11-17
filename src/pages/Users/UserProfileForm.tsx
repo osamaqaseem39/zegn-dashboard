@@ -352,7 +352,7 @@ const UserProfileForm: React.FC = () => {
                         Account Balance
                       </span>
                       <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                        ${user.balance.toFixed(2)}
+                        ${typeof user.balance === 'number' ? user.balance.toFixed(2) : parseFloat(String(user.balance || 0)).toFixed(2)}
                       </span>
                     </div>
                     
