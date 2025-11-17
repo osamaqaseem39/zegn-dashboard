@@ -5,6 +5,7 @@ import Input from '../../components/form/input/InputField';
 import Select from '../../components/form/input/SelectField';
 import TextArea from '../../components/form/input/TextArea';
 import Checkbox from '../../components/form/input/Checkbox';
+import Label from '../../components/form/Label';
 import { authApi, UserProfile } from '../../api/authApi';
 import { Mail, User, Phone, MapPin, Calendar, Shield, Bell } from 'lucide-react';
 import { Button } from '../../components/ui/button';
@@ -186,64 +187,76 @@ const UserProfileForm: React.FC = () => {
             Basic Information
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input
-              label="First Name"
-              name="firstName"
-              value={formData.firstName}
-              onChange={(e) => handleInputChange('firstName', e.target.value)}
-              placeholder="Enter first name"
-              required
-              icon={<User className="h-4 w-4" />}
-            />
+            <div>
+              <Label htmlFor="firstName">First Name *</Label>
+              <Input
+                id="firstName"
+                name="firstName"
+                value={formData.firstName}
+                onChange={(e) => handleInputChange('firstName', e.target.value)}
+                placeholder="Enter first name"
+                required
+              />
+            </div>
             
-            <Input
-              label="Last Name"
-              name="lastName"
-              value={formData.lastName}
-              onChange={(e) => handleInputChange('lastName', e.target.value)}
-              placeholder="Enter last name"
-              required
-              icon={<User className="h-4 w-4" />}
-            />
+            <div>
+              <Label htmlFor="lastName">Last Name *</Label>
+              <Input
+                id="lastName"
+                name="lastName"
+                value={formData.lastName}
+                onChange={(e) => handleInputChange('lastName', e.target.value)}
+                placeholder="Enter last name"
+                required
+              />
+            </div>
             
-            <Input
-              label="Email Address"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              placeholder="Enter email address"
-              required
-              icon={<Mail className="h-4 w-4" />}
-            />
+            <div>
+              <Label htmlFor="email">Email Address *</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                placeholder="Enter email address"
+                required
+              />
+            </div>
             
-            <Input
-              label="Phone Number"
-              name="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
-              placeholder="Enter phone number"
-              icon={<Phone className="h-4 w-4" />}
-            />
+            <div>
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                placeholder="Enter phone number"
+              />
+            </div>
             
-            <Input
-              label="Date of Birth"
-              name="dateOfBirth"
-              type="date"
-              value={formData.dateOfBirth}
-              onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-              icon={<Calendar className="h-4 w-4" />}
-            />
+            <div>
+              <Label htmlFor="dateOfBirth">Date of Birth</Label>
+              <Input
+                id="dateOfBirth"
+                name="dateOfBirth"
+                type="date"
+                value={formData.dateOfBirth}
+                onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+              />
+            </div>
             
-            <Input
-              label="Address"
-              name="address"
-              value={formData.address}
-              onChange={(e) => handleInputChange('address', e.target.value)}
-              placeholder="Enter address"
-              icon={<MapPin className="h-4 w-4" />}
-            />
+            <div>
+              <Label htmlFor="address">Address</Label>
+              <Input
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                placeholder="Enter address"
+              />
+            </div>
           </div>
         </div>
 
@@ -302,29 +315,56 @@ const UserProfileForm: React.FC = () => {
             Notification Settings
           </h3>
           <div className="space-y-4">
-            <Checkbox
-              label="Email Notifications"
-              name="emailNotifications"
-              checked={formData.notifications.email}
-              onChange={(value) => handleNestedChange('notifications', 'email', typeof value === 'boolean' ? value : value.target.checked)}
-              hint="Receive notifications via email"
-            />
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="emailNotifications"
+                name="emailNotifications"
+                checked={formData.notifications.email}
+                onChange={(value) => handleNestedChange('notifications', 'email', typeof value === 'boolean' ? value : value.target.checked)}
+              />
+              <div className="flex-1">
+                <Label htmlFor="emailNotifications" className="cursor-pointer">
+                  Email Notifications
+                </Label>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  Receive notifications via email
+                </p>
+              </div>
+            </div>
             
-            <Checkbox
-              label="Push Notifications"
-              name="pushNotifications"
-              checked={formData.notifications.push}
-              onChange={(value) => handleNestedChange('notifications', 'push', typeof value === 'boolean' ? value : value.target.checked)}
-              hint="Receive push notifications in the app"
-            />
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="pushNotifications"
+                name="pushNotifications"
+                checked={formData.notifications.push}
+                onChange={(value) => handleNestedChange('notifications', 'push', typeof value === 'boolean' ? value : value.target.checked)}
+              />
+              <div className="flex-1">
+                <Label htmlFor="pushNotifications" className="cursor-pointer">
+                  Push Notifications
+                </Label>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  Receive push notifications in the app
+                </p>
+              </div>
+            </div>
             
-            <Checkbox
-              label="SMS Notifications"
-              name="smsNotifications"
-              checked={formData.notifications.sms}
-              onChange={(value) => handleNestedChange('notifications', 'sms', typeof value === 'boolean' ? value : value.target.checked)}
-              hint="Receive notifications via SMS"
-            />
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="smsNotifications"
+                name="smsNotifications"
+                checked={formData.notifications.sms}
+                onChange={(value) => handleNestedChange('notifications', 'sms', typeof value === 'boolean' ? value : value.target.checked)}
+              />
+              <div className="flex-1">
+                <Label htmlFor="smsNotifications" className="cursor-pointer">
+                  SMS Notifications
+                </Label>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  Receive notifications via SMS
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
