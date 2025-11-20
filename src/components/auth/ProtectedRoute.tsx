@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import SessionManager from '../../utils/sessionManager';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -14,6 +15,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   // Show loading spinner while checking authentication
   if (loading) {
+    // Check session storage as fallback while loading
+    const storedUser = SessionManager.getUser();
+    const hasValidToken = SessionManager.hasValidToken();
+    
+    if (storedUser && hasValidToken) {
+      console.log('ProtectedRoute: Found valid session in storage, allowing access');
+      // Don't block if we have valid session data
+      return <>{children}</>;
+    }
+    
     console.log('ProtectedRoute: Showing loading spinner');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -25,8 +36,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
+  // Check both state and session storage
+  const storedUser = SessionManager.getUser();
+  const hasValidToken = SessionManager.hasValidToken();
+  const isAuthenticated = user || (storedUser && hasValidToken);
+
   // Redirect to login if not authenticated
-  if (!user) {
+  if (!isAuthenticated) {
     console.log('ProtectedRoute: No user, redirecting to signin');
     return <Navigate to="/signin" state={{ from: location }} replace />;
   }

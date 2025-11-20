@@ -133,9 +133,8 @@ export const authApi = {
         } else {
           throw new Error(apiResponse.status.message || 'Login failed');
         }
-      } 
-      // Handle flat response structure (direct token and user)
-      else if (responseData.token && responseData.user) {
+      } else if (responseData.token && responseData.user) {
+        // Handle flat response structure (direct token and user)
         let expiresIn = 86400;
         try {
           const payload = JSON.parse(atob(responseData.token.split('.')[1]));

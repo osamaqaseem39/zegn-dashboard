@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import SessionManager from '../../utils/sessionManager';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -32,7 +33,7 @@ interface LoginFormErrors {
 }
 
 const EnhancedSignIn: React.FC = () => {
-  const { login, loading, error } = useAuth();
+  const { login, loading, error, user } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
@@ -42,6 +43,13 @@ const EnhancedSignIn: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (user && !loading) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, loading, navigate]);
 
   const validateForm = (): boolean => {
     const newErrors: LoginFormErrors = {};
@@ -78,9 +86,16 @@ const EnhancedSignIn: React.FC = () => {
       await login(formData);
       
       setShowSuccess(true);
+      
+      // Wait for state to update, then navigate
+      // The useEffect hook will handle navigation when user state is set
+      // But we also add a fallback navigation after a short delay
       setTimeout(() => {
-        navigate('/dashboard');
-      }, 1500);
+        const storedUser = SessionManager.getUser();
+        if (storedUser) {
+          navigate('/dashboard', { replace: true });
+        }
+      }, 300);
     } catch (err: any) {
       setErrors({
         general: err.message || 'Login failed. Please try again.'

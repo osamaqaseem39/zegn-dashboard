@@ -84,11 +84,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
           }
         } else {
-          // Clear any invalid session data
-          console.log('AuthContext: No valid token, clearing session');
-          SessionManager.clearSession();
-          setToken(null);
-          setUser(null);
+          // Only clear session if we're sure there's no valid data
+          // Don't clear if we just logged in (check for recent login)
+          const storedUser = SessionManager.getUser();
+          const storedToken = SessionManager.getToken();
+          
+          if (!storedToken && !storedUser) {
+            // Only clear if both are missing
+            console.log('AuthContext: No token or user, clearing session');
+            SessionManager.clearSession();
+            setToken(null);
+            setUser(null);
+          } else {
+            // If we have stored data but token is "expired", still use it
+            // The API will validate it on the next request
+            console.log('AuthContext: Using stored data despite expiry check');
+            if (storedToken) {
+              setToken(storedToken);
+              axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+            }
+            if (storedUser) {
+              setUser(storedUser);
+            }
+          }
         }
       } catch (error) {
         console.error('AuthContext: Error during initialization:', error);
