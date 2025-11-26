@@ -286,15 +286,35 @@ export const balanceApi = {
   }> => {
     try {
       const response = await axiosInstance.get('/admin/user/transaction-summary');
+      console.log('Transaction summary raw response:', response.data);
+      
+      // Handle different response structures
       if (response.data.body) {
+        // Response wrapped by StandardResponseInterceptor
+        const body = response.data.body;
         return {
-          success: true,
+          success: body.success || true,
+          message: body.message || 'Transaction summary retrieved successfully',
+          data: body.data || [],
+          total: body.total || 0,
+        };
+      } else if (response.data.data) {
+        // Direct response structure
+        return {
+          success: response.data.success || true,
           message: response.data.message || 'Transaction summary retrieved successfully',
-          data: response.data.body.data || response.data.body,
-          total: response.data.body.total || 0,
+          data: response.data.data || [],
+          total: response.data.total || 0,
         };
       }
-      return response.data;
+      
+      // Fallback: assume response.data is the data array
+      return {
+        success: true,
+        message: 'Transaction summary retrieved successfully',
+        data: Array.isArray(response.data) ? response.data : [],
+        total: Array.isArray(response.data) ? response.data.length : 0,
+      };
     } catch (error: any) {
       console.error('Transaction summary API error:', error);
       throw error;

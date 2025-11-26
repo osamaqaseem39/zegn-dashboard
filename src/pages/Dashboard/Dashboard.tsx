@@ -114,6 +114,7 @@ const Dashboard: React.FC = () => {
           ]);
           setTotalBalance(totalBalanceData.data);
           setAllUsersWithBalances(usersWithBalancesData.data?.users || []);
+          console.log('Transaction summary data:', transactionSummaryData);
           setUsersTransactionSummary(transactionSummaryData.data || []);
         } catch (err) {
           console.error('Error loading admin data:', err);
