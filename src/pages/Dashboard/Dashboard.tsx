@@ -360,43 +360,140 @@ const Dashboard: React.FC = () => {
         </Card>
       </div>
 
+      {/* Admin: Aggregated Summary Section */}
+      {isAdmin && totalBalance && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200">
+          <CardHeader>
+            <CardTitle className="text-2xl">Aggregated Totals (All Users Combined)</CardTitle>
+            <p className="text-sm text-gray-600 mt-2">
+              Sum of all balances and token holdings across {totalBalance.totalUsers || 0} active users
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white rounded-lg p-4 border">
+                <div className="text-sm text-gray-600 mb-1">Total Cash (USDC)</div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(parseFloat(totalBalance.totalCashBalance || '0'))}
+                </div>
+              </div>
+              <div className="bg-white rounded-lg p-4 border">
+                <div className="text-sm text-gray-600 mb-1">Total Token Holdings Value</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {formatCurrency(parseFloat(totalBalance.totalHoldingBalance || '0'))}
+                </div>
+              </div>
+              <div className="bg-white rounded-lg p-4 border">
+                <div className="text-sm text-gray-600 mb-1">Grand Total (All Assets)</div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {formatCurrency(parseFloat(totalBalance.totalInUSDC || '0'))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Admin Token Holdings Section */}
       {isAdmin && totalBalance && totalBalance.tokenHoldings && totalBalance.tokenHoldings.length > 0 && (
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Total Token Holdings (All Users)</CardTitle>
+              <CardTitle>Aggregated Token Holdings (All Users Combined)</CardTitle>
+              <p className="text-sm text-muted-foreground mt-2">
+                Total of {totalBalance.tokenHoldings.length} different token types across all users
+              </p>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {totalBalance.tokenHoldings
-                    .filter(holding => parseFloat(holding.balance) > 0)
-                    .sort((a, b) => parseFloat(b.valueInUSD) - parseFloat(a.valueInUSD))
-                    .slice(0, 12)
-                    .map((holding) => (
-                      <div key={holding.mintAddress} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h3 className="font-semibold">{holding.symbol}</h3>
-                            <p className="text-sm text-gray-600">{holding.name || holding.symbol}</p>
-                            <p className="text-xs text-gray-500">{holding.mintAddress.substring(0, 8)}...</p>
+                {/* Top tokens grid view */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Top Token Holdings</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {totalBalance.tokenHoldings
+                      .filter(holding => parseFloat(holding.balance) > 0)
+                      .sort((a, b) => parseFloat(b.valueInUSD) - parseFloat(a.valueInUSD))
+                      .slice(0, 12)
+                      .map((holding) => (
+                        <div key={holding.mintAddress} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h3 className="font-semibold">{holding.symbol}</h3>
+                              <p className="text-sm text-gray-600">{holding.name || holding.symbol}</p>
+                              <p className="text-xs text-gray-500 font-mono">{holding.mintAddress.substring(0, 8)}...</p>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Total Balance:</span>
+                              <span className="text-sm font-medium">
+                                {parseFloat(holding.balance).toLocaleString(undefined, {
+                                  minimumFractionDigits: 4,
+                                  maximumFractionDigits: 8
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Total Value:</span>
+                              <span className="text-sm font-semibold text-green-600">
+                                {formatCurrency(parseFloat(holding.valueInUSD))}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <div className="space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Balance:</span>
-                            <span className="text-sm font-medium">{parseFloat(holding.balance).toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Value:</span>
-                            <span className="text-sm font-semibold text-green-600">
-                              {formatCurrency(parseFloat(holding.valueInUSD))}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                  </div>
+                </div>
+
+                {/* Complete table view of all tokens */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Complete Token Holdings List</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b bg-gray-50">
+                          <th className="text-left p-2">Token Name</th>
+                          <th className="text-left p-2">Symbol</th>
+                          <th className="text-left p-2">Mint Address</th>
+                          <th className="text-right p-2">Total Balance (All Users)</th>
+                          <th className="text-right p-2">Total Value (USD)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {totalBalance.tokenHoldings
+                          .filter(holding => parseFloat(holding.balance) > 0)
+                          .sort((a, b) => parseFloat(b.valueInUSD) - parseFloat(a.valueInUSD))
+                          .map((holding) => (
+                            <tr key={holding.mintAddress} className="border-b hover:bg-gray-50">
+                              <td className="p-2 font-medium">{holding.name}</td>
+                              <td className="p-2">
+                                <Badge variant="outline">{holding.symbol}</Badge>
+                              </td>
+                              <td className="p-2 text-xs font-mono text-gray-600">
+                                {holding.mintAddress.substring(0, 8)}...{holding.mintAddress.substring(holding.mintAddress.length - 6)}
+                              </td>
+                              <td className="p-2 text-right font-medium">
+                                {parseFloat(holding.balance).toLocaleString(undefined, {
+                                  minimumFractionDigits: 4,
+                                  maximumFractionDigits: 8
+                                })}
+                              </td>
+                              <td className="p-2 text-right font-semibold text-green-600">
+                                {formatCurrency(parseFloat(holding.valueInUSD))}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t-2 font-bold bg-gray-100">
+                          <td colSpan={4} className="p-2 text-right">Total Value of All Token Holdings:</td>
+                          <td className="p-2 text-right text-lg text-green-600">
+                            {formatCurrency(parseFloat(totalBalance.totalHoldingBalance || '0'))}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
                 </div>
               </div>
             </CardContent>

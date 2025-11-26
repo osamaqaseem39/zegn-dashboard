@@ -38,6 +38,7 @@ interface TotalBalanceData {
   tokenHoldings: Array<{
     mintAddress: string;
     symbol: string;
+    name: string;
     balance: string;
     valueInUSD: string;
   }>;
@@ -113,13 +114,15 @@ const BalanceManagement: React.FC = () => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | string) => {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (isNaN(num)) return '$0.00';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(amount);
+    }).format(num);
   };
 
   const formatAddress = (address: string) => {
@@ -323,41 +326,142 @@ const BalanceManagement: React.FC = () => {
         )}
       </div>
 
+      {/* Admin: Aggregated Summary Section */}
+      {isAdmin && totalBalance && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200">
+          <CardHeader>
+            <CardTitle className="text-2xl">Aggregated Totals (All Users Combined)</CardTitle>
+            <p className="text-sm text-gray-600 mt-2">
+              Sum of all balances and token holdings across {totalBalance.totalUsers || 0} active users
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white rounded-lg p-4 border">
+                <div className="text-sm text-gray-600 mb-1">Total Cash (USDC)</div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(parseFloat(totalBalance.totalCashBalance || '0'))}
+                </div>
+              </div>
+              <div className="bg-white rounded-lg p-4 border">
+                <div className="text-sm text-gray-600 mb-1">Total Token Holdings Value</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {formatCurrency(parseFloat(totalBalance.totalHoldingBalance || '0'))}
+                </div>
+              </div>
+              <div className="bg-white rounded-lg p-4 border">
+                <div className="text-sm text-gray-600 mb-1">Grand Total (All Assets)</div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {formatCurrency(parseFloat(totalBalance.totalInUSDC || '0'))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Token Holdings Breakdown (Admin Only) */}
       {isAdmin && totalBalance && totalBalance.tokenHoldings && totalBalance.tokenHoldings.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Token Holdings Breakdown (All Users)</CardTitle>
+            <CardTitle>Aggregated Token Holdings (All Users Combined)</CardTitle>
+            <p className="text-sm text-muted-foreground mt-2">
+              Total of {totalBalance.tokenHoldings.length} different token types across all users
+            </p>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {totalBalance.tokenHoldings.map((token, index) => (
-                  <div key={index} className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <Coins className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{token.symbol}</span>
+              {/* Top tokens grid view */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Top Token Holdings</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {totalBalance.tokenHoldings
+                    .filter(holding => parseFloat(holding.balance) > 0)
+                    .sort((a, b) => parseFloat(b.valueInUSD) - parseFloat(a.valueInUSD))
+                    .slice(0, 12)
+                    .map((token) => (
+                      <div key={token.mintAddress} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <Coins className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-semibold">{token.symbol}</span>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">{token.name || token.symbol}</p>
+                            <p className="text-xs text-gray-500 font-mono mt-1">{token.mintAddress.substring(0, 8)}...</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Total Balance</p>
+                            <p className="text-sm font-semibold">
+                              {parseFloat(token.balance || '0').toLocaleString(undefined, {
+                                minimumFractionDigits: 4,
+                                maximumFractionDigits: 8
+                              })}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Value in USD</p>
+                            <p className="text-sm font-semibold text-green-600">
+                              {formatCurrency(parseFloat(token.valueInUSD || '0'))}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-1">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Total Balance</p>
-                        <p className="text-sm font-semibold">
-                          {parseFloat(token.balance || '0').toLocaleString(undefined, {
-                            maximumFractionDigits: 6
-                          })}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Value in USD</p>
-                        <p className="text-sm font-semibold text-green-600">
-                          {formatCurrency(parseFloat(token.valueInUSD || '0'))}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    ))}
+                </div>
+              </div>
+
+              {/* Complete table view of all tokens */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Complete Token Holdings List</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b bg-gray-50">
+                        <th className="text-left p-2">Token Name</th>
+                        <th className="text-left p-2">Symbol</th>
+                        <th className="text-left p-2">Mint Address</th>
+                        <th className="text-right p-2">Total Balance (All Users)</th>
+                        <th className="text-right p-2">Total Value (USD)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {totalBalance.tokenHoldings
+                        .filter(holding => parseFloat(holding.balance) > 0)
+                        .sort((a, b) => parseFloat(b.valueInUSD) - parseFloat(a.valueInUSD))
+                        .map((token) => (
+                          <tr key={token.mintAddress} className="border-b hover:bg-gray-50">
+                            <td className="p-2 font-medium">{token.name || token.symbol}</td>
+                            <td className="p-2">
+                              <Badge variant="outline">{token.symbol}</Badge>
+                            </td>
+                            <td className="p-2 text-xs font-mono text-gray-600">
+                              {token.mintAddress.substring(0, 8)}...{token.mintAddress.substring(token.mintAddress.length - 6)}
+                            </td>
+                            <td className="p-2 text-right font-medium">
+                              {parseFloat(token.balance || '0').toLocaleString(undefined, {
+                                minimumFractionDigits: 4,
+                                maximumFractionDigits: 8
+                              })}
+                            </td>
+                            <td className="p-2 text-right font-semibold text-green-600">
+                              {formatCurrency(parseFloat(token.valueInUSD || '0'))}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t-2 font-bold bg-gray-100">
+                        <td colSpan={4} className="p-2 text-right">Total Value of All Token Holdings:</td>
+                        <td className="p-2 text-right text-lg text-green-600">
+                          {formatCurrency(parseFloat(totalBalance.totalHoldingBalance || '0'))}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
               </div>
             </div>
           </CardContent>
