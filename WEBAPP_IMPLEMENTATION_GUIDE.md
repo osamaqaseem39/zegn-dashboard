@@ -212,7 +212,7 @@ npm run preview
 ### Environment Configuration
 ```bash
 # API Configuration
-VITE_API_BASE_URL=https://api.yourdomain.com
+VITE_API_BASE_URL=https://degn.vercel.app/api/v1
 VITE_API_VERSION=v1
 
 # Feature Flags

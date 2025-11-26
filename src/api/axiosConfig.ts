@@ -1,7 +1,21 @@
 import axios from 'axios';
 import SessionManager from '../utils/sessionManager';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api/v1';
+// Get API base URL from environment, remove trailing slash if present, fallback to production
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl) {
+    // Remove trailing slash and ensure proper format
+    const url = envUrl.replace(/\/+$/, '');
+    console.log('API Base URL from environment:', url);
+    return url;
+  }
+  console.warn('VITE_API_BASE_URL not set, using default production URL');
+  return 'https://degn.vercel.app/api/v1';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+console.log('Final API Base URL:', API_BASE_URL);
 
 // Create axios instance
 const axiosInstance = axios.create({

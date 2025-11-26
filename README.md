@@ -59,7 +59,7 @@ Create a `.env.local` file with the following variables:
 
 ```env
 # API Configuration
-VITE_API_BASE_URL=https://your-api-domain.vercel.app
+VITE_API_BASE_URL=https://degn.vercel.app/api/v1
 VITE_API_VERSION=v1
 
 # Other configurations

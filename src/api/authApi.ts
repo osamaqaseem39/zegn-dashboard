@@ -2,7 +2,17 @@ import axios from 'axios';
 import { axiosConfig } from './axiosConfig';
 import axiosInstance from './axiosConfig';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api/v1';
+// Get API base URL from environment, remove trailing slash if present, fallback to production
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl) {
+    // Remove trailing slash and ensure proper format
+    return envUrl.replace(/\/+$/, '');
+  }
+  return 'https://degn.vercel.app/api/v1';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export interface RegisterRequest {
   email: string;
