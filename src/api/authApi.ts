@@ -2,7 +2,7 @@ import axios from 'axios';
 import { axiosConfig } from './axiosConfig';
 import axiosInstance from './axiosConfig';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api/v1';
 
 export interface RegisterRequest {
   email: string;
