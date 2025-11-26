@@ -16,7 +16,12 @@ export interface Transaction {
   status: 'success' | 'failed' | 'pending';
   platformFee: string;
   type: 'buy' | 'sell' | 'send' | 'referral';
-  user: string;
+  user: string | {
+    _id: string;
+    email: string;
+    userName: string;
+    role: string;
+  } | null;
   transaction: string;
   token: {
     _id: string;
@@ -25,7 +30,7 @@ export interface Transaction {
     tokenAddress: string;
     decimals: number;
     price: number;
-  };
+  } | null;
   isActive: boolean;
   error: string;
   createdAt: string;
@@ -74,6 +79,7 @@ export interface TransactionHistoryRequest {
   includeFailed?: boolean;
   limit?: number;
   offset?: number;
+  populate?: string;
 }
 
 export interface TransactionHistoryResponse {

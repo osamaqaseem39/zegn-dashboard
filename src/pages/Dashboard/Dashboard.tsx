@@ -10,6 +10,7 @@ import { authApi, UserProfile } from '../../api/authApi';
 import { transactionApi, Transaction } from '../../api/transactionApi';
 import { tokenApi, Token, TokenPricesResponse } from '../../api/tokenApi';
 import { referralApi, ReferralStats, ReferralEarnings } from '../../api/referralApi';
+import { balanceApi } from '../../api/balanceApi';
 import TokenDashboard from '../../components/tokens/TokenDashboard';
 import CoinGeckoDemo from '../../components/tokens/CoinGeckoDemo';
 import { 
@@ -32,6 +33,20 @@ interface DashboardStats {
   totalEarnings: number;
 }
 
+interface TotalBalanceData {
+  totalBalance: string;
+  totalCashBalance: string;
+  totalHoldingBalance: string;
+  totalInUSDC: string;
+  totalUsers: number;
+  tokenHoldings: Array<{
+    mintAddress: string;
+    symbol: string;
+    balance: string;
+    valueInUSD: string;
+  }>;
+}
+
 const Dashboard: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -39,8 +54,11 @@ const Dashboard: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [referralStats, setReferralStats] = useState<ReferralStats | null>(null);
   const [referralEarnings, setReferralEarnings] = useState<ReferralEarnings | null>(null);
+  const [totalBalance, setTotalBalance] = useState<TotalBalanceData | null>(null);
+  const [allUsersWithBalances, setAllUsersWithBalances] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isAdmin = user?.role === 'admin';
 
   // Trading state
   const [selectedToken, setSelectedToken] = useState<string>('');
@@ -67,6 +85,7 @@ const Dashboard: React.FC = () => {
       // Load user profile
       const userProfile = await authApi.getProfile();
       setUser(userProfile);
+      const isAdminUser = userProfile?.role === 'admin';
 
       // Load tokens and prices
       const tokensData = await tokenApi.getTokens();
@@ -76,17 +95,42 @@ const Dashboard: React.FC = () => {
       const pricesData = await tokenApi.getTokenPrices(symbols);
       setTokenPrices(pricesData);
 
-      // Load recent transactions
-      const transactionsData = await transactionApi.getTransactionHistory({ limit: 10 });
+      // Load transactions - admins see all transactions, users see only their own
+      const transactionsData = await transactionApi.getTransactionHistory({ 
+        limit: isAdminUser ? 50 : 10,
+        populate: isAdminUser ? 'token,user' : 'token'
+      });
       setTransactions(transactionsData.transactions);
 
-      // Load referral data
-      const [statsData, earningsData] = await Promise.all([
-        referralApi.getReferralStats(),
-        referralApi.getReferralEarnings()
-      ]);
-      setReferralStats(statsData);
-      setReferralEarnings(earningsData);
+      // Load admin-specific data if user is admin
+      if (isAdminUser) {
+        try {
+          const [totalBalanceData, usersWithBalancesData] = await Promise.all([
+            balanceApi.getTotalBalance(),
+            balanceApi.getAllUsersWithBalances()
+          ]);
+          setTotalBalance(totalBalanceData.data);
+          setAllUsersWithBalances(usersWithBalancesData.data?.users || []);
+        } catch (err) {
+          console.error('Error loading admin data:', err);
+          // Continue even if admin data fails
+        }
+      }
+
+      // Load referral data (only for non-admin users)
+      if (!isAdminUser) {
+        try {
+          const [statsData, earningsData] = await Promise.all([
+            referralApi.getReferralStats(),
+            referralApi.getReferralEarnings()
+          ]);
+          setReferralStats(statsData);
+          setReferralEarnings(earningsData);
+        } catch (err) {
+          console.error('Error loading referral data:', err);
+          // Continue even if referral data fails
+        }
+      }
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
@@ -168,29 +212,85 @@ const Dashboard: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Welcome back, {user?.firstName || 'User'}!</h1>
-          <p className="text-gray-600">Here's what's happening with your account</p>
+          <h1 className="text-3xl font-bold">
+            {isAdmin ? 'Admin Dashboard' : `Welcome back, ${user?.firstName || 'User'}!`}
+          </h1>
+          <p className="text-gray-600">
+            {isAdmin ? 'Overview of all users and transactions' : "Here's what's happening with your account"}
+          </p>
         </div>
         <div className="flex items-center space-x-4">
-          <Badge variant="outline" className="flex items-center space-x-2">
-            <Wallet className="h-4 w-4" />
-            <span>{formatCurrency(typeof user?.balance === 'number' ? user.balance : parseFloat(String(user?.balance || 0)))}</span>
-          </Badge>
+          {isAdmin && totalBalance ? (
+            <Badge variant="outline" className="flex items-center space-x-2">
+              <Wallet className="h-4 w-4" />
+              <span>{formatCurrency(parseFloat(totalBalance.totalInUSDC || '0'))}</span>
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="flex items-center space-x-2">
+              <Wallet className="h-4 w-4" />
+              <span>{formatCurrency(typeof user?.balance === 'number' ? user.balance : parseFloat(String(user?.balance || 0)))}</span>
+            </Badge>
+          )}
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(typeof user?.balance === 'number' ? user.balance : parseFloat(String(user?.balance || 0)))}</div>
-            <p className="text-xs text-muted-foreground">Available for trading</p>
-          </CardContent>
-        </Card>
+        {isAdmin && totalBalance ? (
+          <>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Balance (All Users)</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(parseFloat(totalBalance.totalInUSDC || '0'))}</div>
+                <p className="text-xs text-muted-foreground">Total in USDC</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Cash Balance</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(parseFloat(totalBalance.totalCashBalance || '0'))}</div>
+                <p className="text-xs text-muted-foreground">USDC holdings</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Token Holdings</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(parseFloat(totalBalance.totalHoldingBalance || '0'))}</div>
+                <p className="text-xs text-muted-foreground">Total token value</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalBalance.totalUsers || 0}</div>
+                <p className="text-xs text-muted-foreground">Active users</p>
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(typeof user?.balance === 'number' ? user.balance : parseFloat(String(user?.balance || 0)))}</div>
+              <p className="text-xs text-muted-foreground">Available for trading</p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -225,6 +325,49 @@ const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Admin Token Holdings Section */}
+      {isAdmin && totalBalance && totalBalance.tokenHoldings && totalBalance.tokenHoldings.length > 0 && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Total Token Holdings (All Users)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {totalBalance.tokenHoldings
+                    .filter(holding => parseFloat(holding.balance) > 0)
+                    .sort((a, b) => parseFloat(b.valueInUSD) - parseFloat(a.valueInUSD))
+                    .slice(0, 12)
+                    .map((holding) => (
+                      <div key={holding.mintAddress} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h3 className="font-semibold">{holding.symbol}</h3>
+                            <p className="text-sm text-gray-500">{holding.mintAddress.substring(0, 8)}...</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Balance:</span>
+                            <span className="text-sm font-medium">{parseFloat(holding.balance).toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Value:</span>
+                            <span className="text-sm font-semibold text-green-600">
+                              {formatCurrency(parseFloat(holding.valueInUSD))}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Token Dashboard */}
       <div className="space-y-6">
@@ -375,10 +518,65 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* All Users with Balances (Admin Only) */}
+      {isAdmin && allUsersWithBalances.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>All Users with Balances</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Email</th>
+                    <th className="text-left p-2">Username</th>
+                    <th className="text-left p-2">Wallet Address</th>
+                    <th className="text-right p-2">Total Balance</th>
+                    <th className="text-right p-2">Cash (USDC)</th>
+                    <th className="text-right p-2">Holdings</th>
+                    <th className="text-center p-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allUsersWithBalances.map((userData) => (
+                    <tr key={userData._id} className="border-b hover:bg-gray-50">
+                      <td className="p-2">{userData.email}</td>
+                      <td className="p-2">{userData.userName || 'N/A'}</td>
+                      <td className="p-2 text-xs font-mono">
+                        {userData.walletAddress ? `${userData.walletAddress.substring(0, 8)}...` : 'No wallet'}
+                      </td>
+                      <td className="p-2 text-right">
+                        {userData.balance.hasError ? (
+                          <span className="text-red-500">Error</span>
+                        ) : (
+                          formatCurrency(parseFloat(userData.balance.totalBalance || '0'))
+                        )}
+                      </td>
+                      <td className="p-2 text-right">
+                        {formatCurrency(parseFloat(userData.balance.cashBalance || '0'))}
+                      </td>
+                      <td className="p-2 text-right">
+                        {formatCurrency(parseFloat(userData.balance.totalHoldingBalance || '0'))}
+                      </td>
+                      <td className="p-2 text-center">
+                        <Badge variant={userData.isActive ? 'default' : 'secondary'}>
+                          {userData.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Recent Transactions */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Transactions</CardTitle>
+          <CardTitle>{isAdmin ? 'All Transactions' : 'Recent Transactions'}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -399,7 +597,14 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div>
                     <div className="font-medium capitalize">{transaction.type}</div>
-                    <div className="text-sm text-gray-600">{transaction.token?.symbol}</div>
+                    <div className="text-sm text-gray-600">
+                      {transaction.token?.symbol || 'N/A'}
+                      {isAdmin && transaction.user && typeof transaction.user === 'object' && transaction.user !== null && (
+                        <span className="ml-2 text-xs text-blue-600">
+                          ({transaction.user.email || transaction.user.userName || 'User'})
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="text-right">

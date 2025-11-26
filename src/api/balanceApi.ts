@@ -157,5 +157,84 @@ export const balanceApi = {
       console.error('Disconnect wallet API error:', error);
       throw error;
     }
+  },
+
+  // Get total balance across all users (admin only)
+  getTotalBalance: async (): Promise<{
+    success: boolean;
+    data: {
+      totalBalance: string;
+      totalCashBalance: string;
+      totalHoldingBalance: string;
+      totalInUSDC: string;
+      totalUsers: number;
+      tokenHoldings: Array<{
+        mintAddress: string;
+        symbol: string;
+        balance: string;
+        valueInUSD: string;
+      }>;
+    };
+    message?: string;
+  }> => {
+    try {
+      const response = await axiosInstance.get('/admin/user/total-balance');
+      
+      // Handle different response structures
+      if (response.data.body) {
+        return {
+          success: true,
+          data: response.data.body,
+          message: response.data.message || 'Total balance retrieved successfully'
+        };
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Total balance API error:', error);
+      throw error;
+    }
+  },
+
+  // Get all users with their balances (admin only)
+  getAllUsersWithBalances: async (): Promise<{
+    success: boolean;
+    data: {
+      users: Array<{
+        _id: string;
+        email: string;
+        userName: string;
+        role: string;
+        walletAddress: string;
+        balance: {
+          totalBalance: string;
+          cashBalance: string;
+          totalHoldingBalance: string;
+          hasError: boolean;
+        };
+        createdAt: string;
+        isActive: boolean;
+      }>;
+      total: number;
+    };
+    message?: string;
+  }> => {
+    try {
+      const response = await axiosInstance.get('/admin/user/all-with-balances');
+      
+      // Handle different response structures
+      if (response.data.body) {
+        return {
+          success: true,
+          data: response.data.body,
+          message: response.data.message || 'Users with balances retrieved successfully'
+        };
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('All users with balances API error:', error);
+      throw error;
+    }
   }
 };
