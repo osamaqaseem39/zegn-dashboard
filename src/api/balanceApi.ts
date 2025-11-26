@@ -100,6 +100,17 @@ export const balanceApi = {
       const response = await axiosInstance.get('/user/balance/history', { params });
       return response.data;
     } catch (error: any) {
+      // Handle 404 gracefully - endpoint may not exist
+      if (error.response?.status === 404) {
+        console.warn('Balance history endpoint not available');
+        return {
+          success: false,
+          data: {
+            history: [],
+            total: 0
+          }
+        };
+      }
       console.error('Balance history API error:', error);
       throw error;
     }
@@ -125,6 +136,19 @@ export const balanceApi = {
       const response = await axiosInstance.get('/user/wallet');
       return response.data;
     } catch (error: any) {
+      // Handle 404 gracefully - endpoint may not exist
+      if (error.response?.status === 404) {
+        console.warn('Wallet info endpoint not available');
+        return {
+          success: false,
+          data: {
+            address: '',
+            balance: 0,
+            totalRewards: 0,
+            isActive: false
+          }
+        };
+      }
       console.error('Wallet info API error:', error);
       throw error;
     }
