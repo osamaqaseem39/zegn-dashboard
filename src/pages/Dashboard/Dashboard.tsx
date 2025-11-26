@@ -107,18 +107,47 @@ const Dashboard: React.FC = () => {
       // Load admin-specific data if user is admin
       if (isAdminUser) {
         try {
+          console.log('Loading admin data: totalBalance, usersWithBalances, transactionSummary');
           const [totalBalanceData, usersWithBalancesData, transactionSummaryData] = await Promise.all([
-            balanceApi.getTotalBalance(),
-            balanceApi.getAllUsersWithBalances(),
-            balanceApi.getUsersWithTransactionSummary()
+            balanceApi.getTotalBalance().catch(err => {
+              console.error('Error loading totalBalance:', err);
+              throw err;
+            }),
+            balanceApi.getAllUsersWithBalances().catch(err => {
+              console.error('Error loading usersWithBalances:', err);
+              throw err;
+            }),
+            balanceApi.getUsersWithTransactionSummary().catch(err => {
+              console.error('Error loading transactionSummary:', err);
+              throw err;
+            })
           ]);
+          console.log('Admin data loaded successfully');
           setTotalBalance(totalBalanceData.data);
           setAllUsersWithBalances(usersWithBalancesData.data?.users || []);
           console.log('Transaction summary data:', transactionSummaryData);
           setUsersTransactionSummary(transactionSummaryData.data || []);
         } catch (err) {
           console.error('Error loading admin data:', err);
-          // Continue even if admin data fails
+          // Continue even if admin data fails - try to load what we can
+          try {
+            const totalBalanceData = await balanceApi.getTotalBalance();
+            setTotalBalance(totalBalanceData.data);
+          } catch (e) {
+            console.error('Failed to load totalBalance:', e);
+          }
+          try {
+            const usersWithBalancesData = await balanceApi.getAllUsersWithBalances();
+            setAllUsersWithBalances(usersWithBalancesData.data?.users || []);
+          } catch (e) {
+            console.error('Failed to load usersWithBalances:', e);
+          }
+          try {
+            const transactionSummaryData = await balanceApi.getUsersWithTransactionSummary();
+            setUsersTransactionSummary(transactionSummaryData.data || []);
+          } catch (e) {
+            console.error('Failed to load transactionSummary:', e);
+          }
         }
       }
 
