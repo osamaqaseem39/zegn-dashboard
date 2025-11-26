@@ -7,6 +7,7 @@ import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Checkbox from "../../components/form/input/Checkbox";
 import PageMeta from "../../components/common/PageMeta";
 import { authApi } from "../../api/authApi";
+import SessionManager from "../../utils/sessionManager";
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -95,9 +96,9 @@ export default function SignUp() {
       
       setSuccess('Admin account created successfully! Redirecting to sign in...');
       
-      // Store token if provided
+      // Store token if provided (using SessionManager for consistency)
       if (response.token) {
-        localStorage.setItem('token', response.token);
+        SessionManager.setToken(response.token);
       }
       
       // Redirect to sign in page after 2 seconds

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import SessionManager from '../utils/sessionManager';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api/v1';
 
@@ -13,7 +14,8 @@ const axiosInstance = axios.create({
 // Add request interceptor for auth token if needed
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    // Use SessionManager to get token from sessionStorage
+    const token = SessionManager.getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -29,8 +31,12 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/signin';
+      // Use SessionManager to clear session
+      SessionManager.clearSession();
+      // Only redirect if not already on signin page
+      if (window.location.pathname !== '/signin' && window.location.pathname !== '/login') {
+        window.location.href = '/signin';
+      }
     }
     return Promise.reject(error);
   }

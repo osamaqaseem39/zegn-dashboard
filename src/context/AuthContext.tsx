@@ -74,13 +74,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               // Update stored user data
               SessionManager.setUser(userProfile);
               console.log('AuthContext: Token validation successful');
-            } catch (err) {
+            } catch (err: any) {
               console.error('Token validation failed:', err);
-              // Token is invalid, clear session
-              SessionManager.clearSession();
-              setToken(null);
-              setUser(null);
-              delete axiosInstance.defaults.headers.common['Authorization'];
+              
+              // Check if it's a network error (backend not running) vs auth error
+              const isNetworkError = !err.response || 
+                err.code === 'ERR_NETWORK' || 
+                err.message?.includes('Network Error') ||
+                err.message?.includes('connection refused');
+              
+              const isAuthError = err.response?.status === 401 || err.response?.status === 403;
+              
+              if (isNetworkError) {
+                // Backend is not available - keep stored data and let API validate on next request
+                console.log('AuthContext: Network error - keeping stored token/user data');
+                setToken(storedToken);
+                axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+                // Don't clear session on network errors
+              } else if (isAuthError) {
+                // Token is invalid (401/403), clear session
+                console.log('AuthContext: Authentication error - clearing session');
+                SessionManager.clearSession();
+                setToken(null);
+                setUser(null);
+                delete axiosInstance.defaults.headers.common['Authorization'];
+              } else {
+                // Other errors - keep stored data but log the error
+                console.log('AuthContext: Unknown error - keeping stored token/user data');
+                setToken(storedToken);
+                axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+              }
             }
           }
         } else {
@@ -108,13 +131,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('AuthContext: Error during initialization:', error);
-        // On any error during initialization, clear session and continue
-        SessionManager.clearSession();
-        setToken(null);
-        setUser(null);
-        delete axiosInstance.defaults.headers.common['Authorization'];
+        
+        // Check if it's a network error - if so, try to preserve stored data
+        const isNetworkError = !error.response || 
+          error.code === 'ERR_NETWORK' || 
+          error.message?.includes('Network Error') ||
+          error.message?.includes('connection refused');
+        
+        if (isNetworkError) {
+          // Backend is not available - try to use stored data if available
+          const storedUser = SessionManager.getUser();
+          const storedToken = SessionManager.getToken();
+          
+          if (storedToken && storedUser) {
+            console.log('AuthContext: Network error - using stored token/user data');
+            setToken(storedToken);
+            setUser(storedUser);
+            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+          } else {
+            // No stored data, clear session
+            SessionManager.clearSession();
+            setToken(null);
+            setUser(null);
+            delete axiosInstance.defaults.headers.common['Authorization'];
+          }
+        } else {
+          // Other errors - clear session
+          SessionManager.clearSession();
+          setToken(null);
+          setUser(null);
+          delete axiosInstance.defaults.headers.common['Authorization'];
+        }
       } finally {
         console.log('AuthContext: Initialization complete, setting loading to false');
         setLoading(false);
