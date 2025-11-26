@@ -26,17 +26,32 @@ axiosInstance.interceptors.request.use(
   }
 );
 
+// Track if we're currently handling a 401 to prevent redirect loops
+let isHandling401 = false;
+
 // Add response interceptor for error handling
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Use SessionManager to clear session
-      SessionManager.clearSession();
-      // Only redirect if not already on signin page
-      if (window.location.pathname !== '/signin' && window.location.pathname !== '/login') {
-        window.location.href = '/signin';
+      // Prevent multiple simultaneous 401 handling
+      if (isHandling401) {
+        return Promise.reject(error);
       }
+      
+      isHandling401 = true;
+      
+      // Don't clear session or redirect immediately - let AuthContext handle it
+      // This prevents premature redirects during initialization or temporary failures
+      console.warn('Axios: Received 401 Unauthorized - letting AuthContext handle it');
+      
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        isHandling401 = false;
+      }, 1000);
+      
+      // Don't redirect here - let the component/AuthContext handle it
+      // This prevents redirect loops and allows proper error handling
     }
     return Promise.reject(error);
   }
