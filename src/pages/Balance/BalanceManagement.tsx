@@ -29,35 +29,70 @@ interface BalanceHistory {
   description: string;
 }
 
+interface TotalBalanceData {
+  totalBalance: string;
+  totalCashBalance: string;
+  totalHoldingBalance: string;
+  totalInUSDC: string;
+  totalUsers: number;
+  tokenHoldings: Array<{
+    mintAddress: string;
+    symbol: string;
+    balance: string;
+    valueInUSD: string;
+  }>;
+}
+
 const BalanceManagement: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isAdmin = user?.role === 'admin';
   const [balanceData, setBalanceData] = useState<BalanceResponse | null>(null);
   const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null);
+  const [totalBalance, setTotalBalance] = useState<TotalBalanceData | null>(null);
   const [balanceHistory, setBalanceHistory] = useState<BalanceHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    loadBalanceData();
-  }, []);
+    if (user) {
+      loadBalanceData();
+    }
+  }, [user]);
 
   const loadBalanceData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Load balance information
-      const balanceResponse = await balanceApi.getCurrentUserBalance();
-      setBalanceData(balanceResponse);
+      // Load admin total balance if user is admin
+      if (isAdmin) {
+        try {
+          const totalBalanceResponse = await balanceApi.getTotalBalance();
+          setTotalBalance(totalBalanceResponse.data);
+        } catch (totalBalanceError) {
+          console.error('Error loading total balance:', totalBalanceError);
+          // Continue even if total balance fails
+        }
+      }
 
-      // Load wallet information
-      try {
-        const walletResponse = await balanceApi.getWalletInfo();
-        setWalletInfo(walletResponse.data);
-      } catch (walletError) {
-        console.log('Wallet info not available:', walletError);
+      // Load balance information (for non-admin users)
+      if (!isAdmin) {
+        try {
+          const balanceResponse = await balanceApi.getCurrentUserBalance();
+          setBalanceData(balanceResponse);
+        } catch (balanceError) {
+          console.log('Balance info not available:', balanceError);
+        }
+
+        // Load wallet information
+        try {
+          const walletResponse = await balanceApi.getWalletInfo();
+          setWalletInfo(walletResponse.data);
+        } catch (walletError) {
+          console.log('Wallet info not available:', walletError);
+        }
       }
 
       // Load balance history
@@ -162,7 +197,11 @@ const BalanceManagement: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Balance Management</h1>
-          <p className="text-gray-600">Manage your wallet and track your balance</p>
+          <p className="text-gray-600">
+            {isAdmin 
+              ? 'View total balances across all users' 
+              : 'Manage your wallet and track your balance'}
+          </p>
         </div>
         <Button onClick={loadBalanceData} variant="outline">
           <RefreshCw className="h-4 w-4 mr-2" />
@@ -172,63 +211,161 @@ const BalanceManagement: React.FC = () => {
 
       {/* Balance Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Total Balance */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {formatCurrency(balanceData?.data.balance || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Current available balance
-            </p>
-          </CardContent>
-        </Card>
+        {isAdmin && totalBalance ? (
+          <>
+            {/* Total Balance (Sum of all wallets + all tokens) */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Balance (All Users)</CardTitle>
+                <Wallet className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">
+                  {formatCurrency(
+                    parseFloat(totalBalance.totalCashBalance || '0') + 
+                    parseFloat(totalBalance.totalHoldingBalance || '0')
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Sum of all wallet balances + token balances
+                </p>
+              </CardContent>
+            </Card>
 
-        {/* Total Rewards */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Rewards</CardTitle>
-            <Coins className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {formatCurrency(balanceData?.data.totalRewards || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              From referrals and rewards
-            </p>
-          </CardContent>
-        </Card>
+            {/* Wallet Balances */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Wallet Balances</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">
+                  {formatCurrency(parseFloat(totalBalance.totalCashBalance || '0'))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Sum of all wallet balances (USDC)
+                </p>
+              </CardContent>
+            </Card>
 
-        {/* Wallet Status */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Wallet Status</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-2">
-              {walletInfo?.isActive ? (
-                <Badge variant="default" className="bg-green-100 text-green-800">
-                  Connected
-                </Badge>
-              ) : (
-                <Badge variant="destructive">Not Connected</Badge>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {walletInfo?.isActive ? 'Wallet is active and secure' : 'Connect your wallet to start trading'}
-            </p>
-          </CardContent>
-        </Card>
+            {/* Token Balances */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Token Balances</CardTitle>
+                <Coins className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">
+                  {formatCurrency(parseFloat(totalBalance.totalHoldingBalance || '0'))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Sum of all token holdings value
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <>
+            {/* Total Balance */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
+                <Wallet className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">
+                  {formatCurrency(balanceData?.data.balance || 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Current available balance
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Total Rewards */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Rewards</CardTitle>
+                <Coins className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">
+                  {formatCurrency(balanceData?.data.totalRewards || 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  From referrals and rewards
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Wallet Status */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Wallet Status</CardTitle>
+                <Shield className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-2">
+                  {walletInfo?.isActive ? (
+                    <Badge variant="default" className="bg-green-100 text-green-800">
+                      Connected
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">Not Connected</Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {walletInfo?.isActive ? 'Wallet is active and secure' : 'Connect your wallet to start trading'}
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
+      {/* Token Holdings Breakdown (Admin Only) */}
+      {isAdmin && totalBalance && totalBalance.tokenHoldings && totalBalance.tokenHoldings.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Token Holdings Breakdown (All Users)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {totalBalance.tokenHoldings.map((token, index) => (
+                  <div key={index} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <Coins className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">{token.symbol}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Total Balance</p>
+                        <p className="text-sm font-semibold">
+                          {parseFloat(token.balance || '0').toLocaleString(undefined, {
+                            maximumFractionDigits: 6
+                          })}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Value in USD</p>
+                        <p className="text-sm font-semibold text-green-600">
+                          {formatCurrency(parseFloat(token.valueInUSD || '0'))}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Wallet Information */}
-      {walletInfo && (
+      {walletInfo && !isAdmin && (
         <Card>
           <CardHeader>
             <CardTitle>Wallet Information</CardTitle>

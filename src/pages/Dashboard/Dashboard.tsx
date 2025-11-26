@@ -42,6 +42,7 @@ interface TotalBalanceData {
   tokenHoldings: Array<{
     mintAddress: string;
     symbol: string;
+    name: string;
     balance: string;
     valueInUSD: string;
   }>;
@@ -345,7 +346,8 @@ const Dashboard: React.FC = () => {
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <h3 className="font-semibold">{holding.symbol}</h3>
-                            <p className="text-sm text-gray-500">{holding.mintAddress.substring(0, 8)}...</p>
+                            <p className="text-sm text-gray-600">{holding.name || holding.symbol}</p>
+                            <p className="text-xs text-gray-500">{holding.mintAddress.substring(0, 8)}...</p>
                           </div>
                         </div>
                         <div className="space-y-1">

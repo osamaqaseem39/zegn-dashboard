@@ -195,6 +195,7 @@ export const balanceApi = {
       tokenHoldings: Array<{
         mintAddress: string;
         symbol: string;
+        name: string;
         balance: string;
         valueInUSD: string;
       }>;
