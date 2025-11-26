@@ -88,10 +88,10 @@ const TransactionManagement: React.FC = () => {
   useEffect(() => {
     loadTransactions();
     
-    // Set up real-time refresh every 30 seconds
+    // Set up real-time refresh every 1 minute
     const refreshInterval = setInterval(() => {
       loadTransactions();
-    }, 30000); // Refresh every 30 seconds
+    }, 60000); // Refresh every 1 minute
     
     return () => clearInterval(refreshInterval);
   }, [filters]);

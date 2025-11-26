@@ -59,6 +59,13 @@ const BalanceManagement: React.FC = () => {
   useEffect(() => {
     if (user) {
       loadBalanceData();
+      
+      // Set up real-time refresh every 1 minute
+      const refreshInterval = setInterval(() => {
+        loadBalanceData();
+      }, 60000); // Refresh every 1 minute
+      
+      return () => clearInterval(refreshInterval);
     }
   }, [user]);
 

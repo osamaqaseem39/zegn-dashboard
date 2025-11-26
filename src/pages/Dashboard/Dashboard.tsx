@@ -72,10 +72,10 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     loadDashboardData();
     
-    // Set up real-time refresh every 30 seconds
-    const refreshInterval = setInterval(() => {
-      loadDashboardData();
-    }, 30000); // Refresh every 30 seconds
+      // Set up real-time refresh every 1 minute
+      const refreshInterval = setInterval(() => {
+        loadDashboardData();
+      }, 60000); // Refresh every 1 minute
     
     return () => clearInterval(refreshInterval);
   }, []);
@@ -123,9 +123,12 @@ const Dashboard: React.FC = () => {
             })
           ]);
           console.log('Admin data loaded successfully');
+          console.log('Total balance data:', totalBalanceData);
+          console.log('Total balance data.data:', totalBalanceData.data);
           setTotalBalance(totalBalanceData.data);
           setAllUsersWithBalances(usersWithBalancesData.data?.users || []);
           console.log('Transaction summary data:', transactionSummaryData);
+          console.log('Transaction summary data.data:', transactionSummaryData.data);
           setUsersTransactionSummary(transactionSummaryData.data || []);
         } catch (err) {
           console.error('Error loading admin data:', err);
@@ -210,11 +213,15 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | string) => {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (isNaN(num)) return '$0.00';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(amount);
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(num);
   };
 
   const formatPercentage = (value: number) => {
@@ -394,111 +401,42 @@ const Dashboard: React.FC = () => {
         </Card>
       )}
 
-      {/* Admin Token Holdings Section */}
+      {/* Admin Token Holdings Section - Simplified */}
       {isAdmin && totalBalance && totalBalance.tokenHoldings && totalBalance.tokenHoldings.length > 0 && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Aggregated Token Holdings (All Users Combined)</CardTitle>
-              <p className="text-sm text-muted-foreground mt-2">
-                Total of {totalBalance.tokenHoldings.length} different token types across all users
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Top tokens grid view */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Top Token Holdings</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {totalBalance.tokenHoldings
-                      .filter(holding => parseFloat(holding.balance) > 0)
-                      .sort((a, b) => parseFloat(b.valueInUSD) - parseFloat(a.valueInUSD))
-                      .slice(0, 12)
-                      .map((holding) => (
-                        <div key={holding.mintAddress} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <h3 className="font-semibold">{holding.symbol}</h3>
-                              <p className="text-sm text-gray-600">{holding.name || holding.symbol}</p>
-                              <p className="text-xs text-gray-500 font-mono">{holding.mintAddress.substring(0, 8)}...</p>
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Total Balance:</span>
-                              <span className="text-sm font-medium">
-                                {parseFloat(holding.balance).toLocaleString(undefined, {
-                                  minimumFractionDigits: 4,
-                                  maximumFractionDigits: 8
-                                })}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Total Value:</span>
-                              <span className="text-sm font-semibold text-green-600">
-                                {formatCurrency(parseFloat(holding.valueInUSD))}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Token Holdings</CardTitle>
+            <p className="text-sm text-gray-600 mt-2">
+              {totalBalance.tokenHoldings.length} token types across all users
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {totalBalance.tokenHoldings
+                .filter(holding => parseFloat(holding.balance) > 0)
+                .sort((a, b) => parseFloat(b.valueInUSD) - parseFloat(a.valueInUSD))
+                .slice(0, 8)
+                .map((holding) => (
+                  <div key={holding.mintAddress} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <div className="font-semibold">{holding.symbol}</div>
+                        <div className="text-xs text-gray-600">{holding.name || holding.symbol}</div>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div>
+                        <p className="text-xs text-gray-600">Value</p>
+                        <p className="text-sm font-semibold text-green-600">
+                          {formatCurrency(parseFloat(holding.valueInUSD || '0'))}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-
-                {/* Complete table view of all tokens */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Complete Token Holdings List</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="border-b bg-gray-50">
-                          <th className="text-left p-2">Token Name</th>
-                          <th className="text-left p-2">Symbol</th>
-                          <th className="text-left p-2">Mint Address</th>
-                          <th className="text-right p-2">Total Balance (All Users)</th>
-                          <th className="text-right p-2">Total Value (USD)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {totalBalance.tokenHoldings
-                          .filter(holding => parseFloat(holding.balance) > 0)
-                          .sort((a, b) => parseFloat(b.valueInUSD) - parseFloat(a.valueInUSD))
-                          .map((holding) => (
-                            <tr key={holding.mintAddress} className="border-b hover:bg-gray-50">
-                              <td className="p-2 font-medium">{holding.name}</td>
-                              <td className="p-2">
-                                <Badge variant="outline">{holding.symbol}</Badge>
-                              </td>
-                              <td className="p-2 text-xs font-mono text-gray-600">
-                                {holding.mintAddress.substring(0, 8)}...{holding.mintAddress.substring(holding.mintAddress.length - 6)}
-                              </td>
-                              <td className="p-2 text-right font-medium">
-                                {parseFloat(holding.balance).toLocaleString(undefined, {
-                                  minimumFractionDigits: 4,
-                                  maximumFractionDigits: 8
-                                })}
-                              </td>
-                              <td className="p-2 text-right font-semibold text-green-600">
-                                {formatCurrency(parseFloat(holding.valueInUSD))}
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                      <tfoot>
-                        <tr className="border-t-2 font-bold bg-gray-100">
-                          <td colSpan={4} className="p-2 text-right">Total Value of All Token Holdings:</td>
-                          <td className="p-2 text-right text-lg text-green-600">
-                            {formatCurrency(parseFloat(totalBalance.totalHoldingBalance || '0'))}
-                          </td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Token Dashboard */}
@@ -715,69 +653,70 @@ const Dashboard: React.FC = () => {
         </Card>
       )}
 
-      {/* All Users with Balances (Admin Only) */}
+      {/* All Users with Balances - Simplified */}
       {isAdmin && allUsersWithBalances.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>All Users with Balances</CardTitle>
+            <CardTitle>User Balances</CardTitle>
+            <p className="text-sm text-gray-600 mt-2">
+              Balance overview for {allUsersWithBalances.length} users
+            </p>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Email</th>
-                    <th className="text-left p-2">Username</th>
-                    <th className="text-left p-2">Wallet Address</th>
-                    <th className="text-right p-2">Total Balance</th>
-                    <th className="text-right p-2">Cash (USDC)</th>
-                    <th className="text-right p-2">Holdings</th>
-                    <th className="text-center p-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allUsersWithBalances.map((userData) => (
-                    <tr key={userData._id} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{userData.email}</td>
-                      <td className="p-2">{userData.userName || 'N/A'}</td>
-                      <td className="p-2 text-xs font-mono">
-                        {userData.walletAddress ? `${userData.walletAddress.substring(0, 8)}...` : 'No wallet'}
-                      </td>
-                      <td className="p-2 text-right">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {allUsersWithBalances.slice(0, 9).map((userData) => (
+                <div key={userData._id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <div className="font-semibold">{userData.userName || userData.email}</div>
+                      <div className="text-xs text-gray-600">{userData.email}</div>
+                    </div>
+                    <Badge variant={userData.isActive ? 'default' : 'secondary'}>
+                      {userData.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Total:</span>
+                      <span className="font-semibold">
                         {userData.balance.hasError ? (
                           <span className="text-red-500">Error</span>
                         ) : (
                           formatCurrency(parseFloat(userData.balance.totalBalance || '0'))
                         )}
-                      </td>
-                      <td className="p-2 text-right">
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Cash:</span>
+                      <span className="font-medium">
                         {formatCurrency(parseFloat(userData.balance.cashBalance || '0'))}
-                      </td>
-                      <td className="p-2 text-right">
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Holdings:</span>
+                      <span className="font-medium">
                         {formatCurrency(parseFloat(userData.balance.totalHoldingBalance || '0'))}
-                      </td>
-                      <td className="p-2 text-center">
-                        <Badge variant={userData.isActive ? 'default' : 'secondary'}>
-                          {userData.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Recent Transactions */}
+      {/* Recent Transactions - Limited */}
       <Card>
         <CardHeader>
-          <CardTitle>{isAdmin ? 'All Transactions' : 'Recent Transactions'}</CardTitle>
+          <CardTitle>{isAdmin ? 'Recent Transactions' : 'Recent Transactions'}</CardTitle>
+          <p className="text-sm text-gray-600 mt-2">
+            Showing latest {Math.min(transactions.length, 10)} transactions
+          </p>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {transactions.map((transaction) => (
+            {transactions.slice(0, 10).map((transaction) => (
               <div key={transaction._id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center space-x-4">
                   <div className={`p-2 rounded-full ${

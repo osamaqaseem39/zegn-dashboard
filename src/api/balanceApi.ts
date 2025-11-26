@@ -204,17 +204,42 @@ export const balanceApi = {
   }> => {
     try {
       const response = await axiosInstance.get('/admin/user/total-balance');
+      console.log('Total balance raw response:', response.data);
       
       // Handle different response structures
       if (response.data.body) {
+        // Response wrapped by StandardResponseInterceptor: { status: {...}, body: { success: true, data: {...} } }
+        const body = response.data.body;
+        if (body.data) {
+          // body contains { success: true, data: {...} }
+          return {
+            success: body.success !== false,
+            data: body.data,
+            message: body.message || response.data.status?.message || 'Total balance retrieved successfully'
+          };
+        } else {
+          // body is the data directly
+          return {
+            success: true,
+            data: body,
+            message: response.data.status?.message || 'Total balance retrieved successfully'
+          };
+        }
+      } else if (response.data.data) {
+        // Direct response structure: { success: true, data: {...} }
         return {
-          success: true,
-          data: response.data.body,
+          success: response.data.success !== false,
+          data: response.data.data,
           message: response.data.message || 'Total balance retrieved successfully'
         };
       }
       
-      return response.data;
+      // Fallback: assume response.data is the data object
+      return {
+        success: true,
+        data: response.data,
+        message: 'Total balance retrieved successfully'
+      };
     } catch (error: any) {
       console.error('Total balance API error:', error);
       throw error;
