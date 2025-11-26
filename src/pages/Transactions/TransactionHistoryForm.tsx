@@ -77,6 +77,13 @@ const TransactionHistoryForm: React.FC = () => {
 
   useEffect(() => {
     loadTransactions();
+    
+    // Set up real-time refresh every 30 seconds
+    const refreshInterval = setInterval(() => {
+      loadTransactions();
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(refreshInterval);
   }, [data.filters, data.pagination.page]);
 
   const loadTransactions = async () => {

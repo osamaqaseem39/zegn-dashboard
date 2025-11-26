@@ -124,13 +124,79 @@ export const transactionApi = {
   getTransactionHistory: async (params?: TransactionHistoryRequest): Promise<TransactionHistoryResponse> => {
     try {
       const response = await axiosInstance.get('/transaction/', { params });
+      const data = response.data;
       
-      // Handle different response structures
-      if (response.data.body) {
-        return response.data.body;
+      console.log('transactionApi.getTransactionHistory: Raw response:', data);
+      
+      // Handle wrapped response structure { status: {...}, body: {...} }
+      if (data.body) {
+        const body = data.body;
+        console.log('transactionApi.getTransactionHistory: Response body:', body);
+        
+        // Ensure we have the correct structure
+        if (body.transactions && body.pagination) {
+          const transactions = Array.isArray(body.transactions) ? body.transactions : [];
+          console.log(`transactionApi.getTransactionHistory: Found ${transactions.length} transactions in body`);
+          return {
+            transactions,
+            pagination: body.pagination || {
+              page: 1,
+              limit: params?.limit || 20,
+              total: 0,
+              pages: 0
+            }
+          };
+        }
+        // If body is the transactions array directly
+        if (Array.isArray(body)) {
+          console.log(`transactionApi.getTransactionHistory: Found ${body.length} transactions in body array`);
+          return {
+            transactions: body,
+            pagination: {
+              page: 1,
+              limit: params?.limit || 20,
+              total: body.length,
+              pages: 1
+            }
+          };
+        }
+        return body;
       }
       
-      return response.data;
+      // Handle direct response structure
+      if (data.transactions && data.pagination) {
+        const transactions = Array.isArray(data.transactions) ? data.transactions : [];
+        console.log(`transactionApi.getTransactionHistory: Found ${transactions.length} transactions in direct response`);
+        return {
+          transactions,
+          pagination: data.pagination
+        };
+      }
+      
+      // Fallback: if data is an array
+      if (Array.isArray(data)) {
+        console.log(`transactionApi.getTransactionHistory: Found ${data.length} transactions in data array`);
+        return {
+          transactions: data,
+          pagination: {
+            page: 1,
+            limit: params?.limit || 20,
+            total: data.length,
+            pages: 1
+          }
+        };
+      }
+      
+      console.warn('transactionApi.getTransactionHistory: Unexpected response structure', data);
+      return {
+        transactions: [],
+        pagination: {
+          page: 1,
+          limit: params?.limit || 20,
+          total: 0,
+          pages: 0
+        }
+      };
     } catch (error: any) {
       console.error('Transaction history API error:', error);
       throw error;

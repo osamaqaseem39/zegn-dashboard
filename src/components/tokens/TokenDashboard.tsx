@@ -34,6 +34,13 @@ const TokenDashboard: React.FC<TokenDashboardProps> = ({
     };
 
     fetchTokens();
+    
+    // Set up real-time refresh every 30 seconds
+    const refreshInterval = setInterval(() => {
+      fetchTokens();
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(refreshInterval);
   }, [limit]);
 
   const formatPrice = (price: string) => {

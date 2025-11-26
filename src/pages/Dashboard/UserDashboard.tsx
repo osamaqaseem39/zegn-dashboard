@@ -45,6 +45,13 @@ const UserDashboard: React.FC = () => {
 
   useEffect(() => {
     loadDashboardData();
+    
+    // Set up real-time refresh every 30 seconds
+    const refreshInterval = setInterval(() => {
+      loadDashboardData();
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
   const loadDashboardData = async () => {

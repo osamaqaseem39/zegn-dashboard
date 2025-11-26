@@ -115,14 +115,55 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, baseDelayMs = 300
 export const tokenApi = {
   // Get all tokens (admin endpoint)
   getTokens: async (): Promise<Token[]> => {
-    const res = await axiosInstance.get('/admin/token');
-    // Axios is configured to unwrap the response; res can be one of:
-    // { tokens: Token[] } | { tokens: { tokens: Token[] } } | Token[]
-    if (Array.isArray(res)) return res as Token[];
-    const maybeTokens = (res as any)?.tokens;
-    if (Array.isArray(maybeTokens)) return maybeTokens as Token[];
-    if (maybeTokens && Array.isArray(maybeTokens.tokens)) return maybeTokens.tokens as Token[];
-    return [];
+    try {
+      const response = await axiosInstance.get('/admin/token');
+      // Backend wraps response in { status: {...}, body: {...} }
+      const data = response.data;
+      
+      console.log('tokenApi.getTokens: Raw response:', data);
+      
+      // Handle wrapped response structure
+      if (data.body) {
+        const body = data.body;
+        console.log('tokenApi.getTokens: Response body:', body);
+        
+        // Check if body has tokens array (from findByFilters which returns { tokens, liveToken })
+        if (Array.isArray(body.tokens)) {
+          console.log(`tokenApi.getTokens: Found ${body.tokens.length} tokens in body.tokens`);
+          return body.tokens as Token[];
+        }
+        // Check if body itself is an array
+        if (Array.isArray(body)) {
+          console.log(`tokenApi.getTokens: Found ${body.length} tokens in body array`);
+          return body as Token[];
+        }
+        // Check nested structure
+        if (body.data && Array.isArray(body.data)) {
+          console.log(`tokenApi.getTokens: Found ${body.data.length} tokens in body.data`);
+          return body.data as Token[];
+        }
+      }
+      
+      // Handle direct response (fallback)
+      if (Array.isArray(data)) {
+        console.log(`tokenApi.getTokens: Found ${data.length} tokens in direct array`);
+        return data as Token[];
+      }
+      if (Array.isArray(data.tokens)) {
+        console.log(`tokenApi.getTokens: Found ${data.tokens.length} tokens in data.tokens`);
+        return data.tokens as Token[];
+      }
+      if (data.data && Array.isArray(data.data)) {
+        console.log(`tokenApi.getTokens: Found ${data.data.length} tokens in data.data`);
+        return data.data as Token[];
+      }
+      
+      console.warn('tokenApi.getTokens: Unexpected response structure', data);
+      return [];
+    } catch (error: any) {
+      console.error('tokenApi.getTokens: Error fetching tokens:', error);
+      throw error;
+    }
   },
 
   // Get token prices
