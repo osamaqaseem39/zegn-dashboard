@@ -261,5 +261,43 @@ export const balanceApi = {
       console.error('All users with balances API error:', error);
       throw error;
     }
-  }
+  },
+
+  // Get users with transaction summary and profit/loss (admin only)
+  getUsersWithTransactionSummary: async (): Promise<{
+    success: boolean;
+    message: string;
+    data: Array<{
+      _id: string;
+      email: string;
+      userName: string;
+      walletAddress: string;
+      totalTransactions: number;
+      buyTransactions: number;
+      sellTransactions: number;
+      totalBuyVolume: string;
+      totalSellVolume: string;
+      totalProfitLoss: string;
+      allTimeProfit: string;
+      isActive: boolean;
+      createdAt: string;
+    }>;
+    total: number;
+  }> => {
+    try {
+      const response = await axiosInstance.get('/admin/user/transaction-summary');
+      if (response.data.body) {
+        return {
+          success: true,
+          message: response.data.message || 'Transaction summary retrieved successfully',
+          data: response.data.body.data || response.data.body,
+          total: response.data.body.total || 0,
+        };
+      }
+      return response.data;
+    } catch (error: any) {
+      console.error('Transaction summary API error:', error);
+      throw error;
+    }
+  },
 };

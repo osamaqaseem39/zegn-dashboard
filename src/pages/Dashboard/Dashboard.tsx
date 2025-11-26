@@ -57,6 +57,7 @@ const Dashboard: React.FC = () => {
   const [referralEarnings, setReferralEarnings] = useState<ReferralEarnings | null>(null);
   const [totalBalance, setTotalBalance] = useState<TotalBalanceData | null>(null);
   const [allUsersWithBalances, setAllUsersWithBalances] = useState<any[]>([]);
+  const [usersTransactionSummary, setUsersTransactionSummary] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isAdmin = user?.role === 'admin';
@@ -106,12 +107,14 @@ const Dashboard: React.FC = () => {
       // Load admin-specific data if user is admin
       if (isAdminUser) {
         try {
-          const [totalBalanceData, usersWithBalancesData] = await Promise.all([
+          const [totalBalanceData, usersWithBalancesData, transactionSummaryData] = await Promise.all([
             balanceApi.getTotalBalance(),
-            balanceApi.getAllUsersWithBalances()
+            balanceApi.getAllUsersWithBalances(),
+            balanceApi.getUsersWithTransactionSummary()
           ]);
           setTotalBalance(totalBalanceData.data);
           setAllUsersWithBalances(usersWithBalancesData.data?.users || []);
+          setUsersTransactionSummary(transactionSummaryData.data || []);
         } catch (err) {
           console.error('Error loading admin data:', err);
           // Continue even if admin data fails
@@ -519,6 +522,71 @@ const Dashboard: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* User-wise Transactions and Profit/Loss (Admin Only) */}
+      {isAdmin && usersTransactionSummary.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>User-wise Transactions & Profit/Loss</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Email</th>
+                    <th className="text-left p-2">Username</th>
+                    <th className="text-center p-2">Total Txns</th>
+                    <th className="text-center p-2">Buy</th>
+                    <th className="text-center p-2">Sell</th>
+                    <th className="text-right p-2">Buy Volume</th>
+                    <th className="text-right p-2">Sell Volume</th>
+                    <th className="text-right p-2">Profit/Loss</th>
+                    <th className="text-right p-2">All-Time Profit</th>
+                    <th className="text-center p-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usersTransactionSummary.map((userData) => {
+                    const profitLoss = parseFloat(userData.totalProfitLoss || '0');
+                    const allTimeProfit = parseFloat(userData.allTimeProfit || '0');
+                    return (
+                      <tr key={userData._id} className="border-b hover:bg-gray-50">
+                        <td className="p-2">{userData.email}</td>
+                        <td className="p-2">{userData.userName || 'N/A'}</td>
+                        <td className="p-2 text-center">{userData.totalTransactions || 0}</td>
+                        <td className="p-2 text-center">
+                          <Badge variant="outline" className="bg-green-50 text-green-700">
+                            {userData.buyTransactions || 0}
+                          </Badge>
+                        </td>
+                        <td className="p-2 text-center">
+                          <Badge variant="outline" className="bg-red-50 text-red-700">
+                            {userData.sellTransactions || 0}
+                          </Badge>
+                        </td>
+                        <td className="p-2 text-right">{formatCurrency(parseFloat(userData.totalBuyVolume || '0'))}</td>
+                        <td className="p-2 text-right">{formatCurrency(parseFloat(userData.totalSellVolume || '0'))}</td>
+                        <td className={`p-2 text-right font-semibold ${profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatCurrency(profitLoss)}
+                        </td>
+                        <td className={`p-2 text-right font-semibold ${allTimeProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatCurrency(allTimeProfit)}
+                        </td>
+                        <td className="p-2 text-center">
+                          <Badge variant={userData.isActive ? 'default' : 'secondary'}>
+                            {userData.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* All Users with Balances (Admin Only) */}
       {isAdmin && allUsersWithBalances.length > 0 && (
