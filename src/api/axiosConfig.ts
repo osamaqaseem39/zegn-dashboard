@@ -28,10 +28,36 @@ const axiosInstance = axios.create({
 // Add request interceptor for auth token if needed
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Use SessionManager to get token from sessionStorage
+    // Always get fresh token from sessionStorage on every request
+    // This ensures we're using the latest token, not a stale one from axios defaults
     const token = SessionManager.getToken();
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      // Ensure token is trimmed and properly formatted
+      const cleanToken = token.trim();
+      // Set Authorization header (HTTP headers are case-insensitive, but use standard casing)
+      config.headers.Authorization = `Bearer ${cleanToken}`;
+      
+      // Debug: Log the authorization header being sent (truncated for security)
+      // Only log in development to avoid console spam
+      if (import.meta.env.DEV) {
+        console.log('Axios Request: Setting Authorization header', {
+          url: config.url,
+          method: config.method,
+          hasToken: !!token,
+          tokenLength: cleanToken?.length,
+          tokenPreview: cleanToken ? `${cleanToken.substring(0, 20)}...` : null,
+          headerSet: !!config.headers.Authorization
+        });
+      }
+    } else {
+      // Remove Authorization header if no token is available
+      delete config.headers.Authorization;
+      if (import.meta.env.DEV) {
+        console.warn('Axios Request: No token available for request', {
+          url: config.url,
+          method: config.method
+        });
+      }
     }
     return config;
   },
@@ -54,6 +80,22 @@ axiosInstance.interceptors.response.use(
       }
       
       isHandling401 = true;
+      
+      // Log detailed 401 error information for debugging
+      const errorDetails = {
+        url: error.config?.url,
+        method: error.config?.method,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        errorMessage: error.response?.data?.status?.message || error.message,
+        errorDetails: error.response?.data?.status?.details,
+        hadToken: !!error.config?.headers?.Authorization || !!error.config?.headers?.authorization,
+        tokenPreview: error.config?.headers?.Authorization 
+          ? error.config.headers.Authorization.substring(0, 30) + '...' 
+          : 'No token in request'
+      };
+      
+      console.error('Axios: Received 401 Unauthorized', errorDetails);
       
       // Don't clear session or redirect immediately - let AuthContext handle it
       // This prevents premature redirects during initialization or temporary failures
